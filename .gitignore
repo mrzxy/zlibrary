@@ -1,0 +1,7 @@
+chromedriver
+venv
+convertor/cases/*
+extractors/*.csv
+.env
+.idea
+__pycache__
