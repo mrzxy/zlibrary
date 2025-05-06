@@ -1,4 +1,6 @@
 from peewee import chunked
+from datetime import datetime
+
 import time
 
 from models.models import FetchTask
@@ -13,8 +15,9 @@ class FetchTaskRepo:
 
     @staticmethod
     def update_status_by_id(task_id, status):
+        print(datetime.now())
         """根据 id 修改 status 和 updated_at"""
-        return FetchTask.update(status=status, updated_at=time.time()).where(FetchTask.id == task_id).execute()
+        return FetchTask.update(status=status, updated_at=datetime.now()).where(FetchTask.id == task_id).execute()
 
     @staticmethod
     def get_by_id(task_id):

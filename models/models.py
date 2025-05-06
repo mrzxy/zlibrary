@@ -1,5 +1,6 @@
 from peewee import (
-    Model, AutoField, CharField, IntegerField, BigIntegerField, TextField, TimestampField, SmallIntegerField
+    Model, AutoField, CharField, IntegerField, BigIntegerField, TextField, TimestampField, SmallIntegerField,
+    DateTimeField
 )
 from database.config import database
 import time
@@ -29,8 +30,8 @@ class Book(BaseModel):
     zlibrary_id = BigIntegerField(null=True)
     book_name = CharField(max_length=500, null=True)
     author = CharField(max_length=500, null=True)
-    created_at = TimestampField(default=None)
-    updated_at = TimestampField(default=None)
+    created_at = DateTimeField(default=None)
+    updated_at = DateTimeField(default=None)
     status = IntegerField(null=True)
 
 class FetchTask(BaseModel):
@@ -38,8 +39,8 @@ class FetchTask(BaseModel):
     book_name = CharField(max_length=200)
     isbn = CharField(max_length=32)
     status = SmallIntegerField(default=1)
-    created_at = TimestampField(default=None)
-    updated_at = TimestampField(default=None)
+    created_at = DateTimeField(default=None)
+    updated_at = DateTimeField(default=None)
     type = SmallIntegerField(default=1)
     class Meta:
         table_name = 'fetch_task'

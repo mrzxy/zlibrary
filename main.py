@@ -1,6 +1,10 @@
 import asyncio
 import signal
 import pymysql
+
+from models.models import FetchTask
+from repo.fetch_task_repo import FetchTaskRepo
+
 pymysql.install_as_MySQLdb()
 from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
@@ -98,6 +102,7 @@ if __name__ == "__main__":
     # download_manager = DownloadManager(max_workers=4, interval=5)
     # 使用 asyncio.to_thread 在单独的线程中运行阻塞操作
     # book = BookRepo.get_by_id(1)
+    # FetchTaskRepo.update_status_by_id(4814, 3)
     # print(book)
     # download_manager.download_book(book)
     asyncio.run(main())
