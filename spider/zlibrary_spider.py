@@ -1,6 +1,6 @@
 import json
 import time
-
+from datetime import datetime
 import requests
 from openpyxl.styles.fills import fills
 
@@ -142,7 +142,7 @@ async def fetch_one(task, proxy_index):
             'book_name': info.get('name'),  # 书名
             'author': ",".join(info.get('authors', [])),  # 作者
             'status': 1,  # 状态
-            'created_at': time.time(),
+            'created_at': datetime.now(),
         })
         if book is not None:
             FetchTaskRepo.update_status_by_id(task.id, 2)
