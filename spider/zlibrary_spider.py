@@ -4,6 +4,7 @@ import time
 import requests
 from openpyxl.styles.fills import fills
 
+from database.config import PROXY_LIST
 from helper.helper import size_to_bytes, find_largest_book, extract_domain
 from logger.logger import logger
 from models.models import FetchTask
@@ -17,13 +18,6 @@ import logging
 dispatch_task_status = True
 
 # 代理列表
-PROXY_LIST = [
-    'socks5://u1935515691237587:HXMmtClbepBo@23.158.232.65:10253',
-    'socks5://u1935515691237587:HXMmtClbepBo@23.158.232.65:10254',
-    'socks5://u1935515691237587:HXMmtClbepBo@23.158.232.65:10255',
-    'socks5://u1935515691237587:HXMmtClbepBo@23.158.232.65:10256',
-    'socks5://u1935515691237587:HXMmtClbepBo@23.158.232.65:10257'
-]
 
 def stop_dispatch_task():
     global dispatch_task_status

@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -16,6 +18,8 @@ DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '3306')
 DB_NAME = os.getenv('DB_NAME', 'mydatabase')
 DOWNLOAD_DIR = os.getenv('DOWNLOAD_DIR', './downloads')
+proxy_str = os.getenv('PROXY')
+PROXY_LIST = json.loads(proxy_str) if proxy_str else []
 
 database = MySQLDatabase(
     DB_NAME,      # 数据库名

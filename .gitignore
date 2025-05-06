@@ -1,7 +1,7 @@
 chromedriver
 venv
 convertor/cases/*
-extractors/*.csv
+excel_to_db/*.csv
 .env
 .idea
 __pycache__
