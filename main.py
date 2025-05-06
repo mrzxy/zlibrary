@@ -5,7 +5,7 @@ pymysql.install_as_MySQLdb()
 from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
 
-from database.config import init_db, close_db
+from database.config import init_db, close_db, WORKER_NUM
 from download_manager import DownloadManager
 from concurrent.futures import ThreadPoolExecutor
 
@@ -58,7 +58,7 @@ async def run_spider_task():
     """爬虫任务"""
     while task_manager.running:
         try:
-            await dispatch_task(30)
+            await dispatch_task(WORKER_NUM)
             # await asyncio.sleep(3)  # 模拟爬虫工作
         except Exception as e:
             logger.error(f"爬虫任务出错: {e}")
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     # download_manager = DownloadManager(max_workers=4, interval=5)
     # 使用 asyncio.to_thread 在单独的线程中运行阻塞操作
     # book = BookRepo.get_by_id(1)
+    # print(book)
     # download_manager.download_book(book)
     asyncio.run(main())
 

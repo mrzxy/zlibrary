@@ -32,7 +32,8 @@ async def NewZlibrarySpider(proxy_index=0):
 class ZlibrarySpider:
     def __init__(self, proxy_index=0):
         self.proxy_index = proxy_index
-        self.lib = zlibrary.AsyncZlib(proxy_list=[PROXY_LIST[proxy_index % len(PROXY_LIST)]])
+        cur_proxy = [PROXY_LIST[proxy_index % len(PROXY_LIST)]]
+        self.lib = zlibrary.AsyncZlib(proxy_list=cur_proxy)
 
     async def login(self):
         email = ""
@@ -89,10 +90,10 @@ async def fetch_one(task, proxy_index):
         spider = await NewZlibrarySpider(proxy_index)
         fetch_records = await spider.search(task)
         if len(fetch_records) < 1:
-            logger.warning(f"搜索不到图书{task.book_name}")
+            logger.warning(f"根据{task.book_name} 没有找到匹配的书籍")
             FetchTaskRepo.update_status_by_id(task.id, 4)
             return None
-        logger.info(f"{task.book_name} 找到 {fetch_records[0].get('name')}")
+        logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
@@ -155,7 +156,7 @@ async def fetch_one(task, proxy_index):
 async def sem_fetch_one(sem, task, proxy_index):
     async with sem:
         if not dispatch_task_status:
-            logger.info("dispatch_task_status is False, stop dispatch_task")
+            # logger.info("dispatch_task_status is False, stop dispatch_task")
             return
         await fetch_one(task, proxy_index)
 
@@ -177,7 +178,11 @@ async def dispatch_task(concurrency=10):
         # 分批处理任务
         for i in range(0, len(fetch_tasks), batch_size):
             batch_tasks = fetch_tasks[i:i + batch_size]
-            logger.info(f"Processing batch {i//batch_size + 1}, tasks: {len(batch_tasks)}")
+            # logger.info(f"Processing batch {i//batch_size + 1}, tasks: {len(batch_tasks)}")
+
+            if not dispatch_task_status:
+                break
+
             
             # 为每个任务分配一个代理，代理会循环使用
             tasks_with_proxy = [(task, (proxy_index + j) % len(PROXY_LIST)) for j, task in enumerate(batch_tasks)]
