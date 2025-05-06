@@ -32,8 +32,14 @@ async def NewZlibrarySpider(proxy_index=0):
 class ZlibrarySpider:
     def __init__(self, proxy_index=0):
         self.proxy_index = proxy_index
-        cur_proxy = [PROXY_LIST[proxy_index % len(PROXY_LIST)]]
+        cur_proxy = []
+        if proxy_index > -1:
+            cur_proxy = [PROXY_LIST[proxy_index % len(PROXY_LIST)]]
+            logger.info(f"Use proxy: {cur_proxy}")
+        else:
+            logger.info("No proxy used")
         self.lib = zlibrary.AsyncZlib(proxy_list=cur_proxy)
+
 
     async def login(self):
         email = ""
@@ -43,7 +49,7 @@ class ZlibrarySpider:
     async def search(self, task):
         q = task.isbn if task.type == "isbn" else task.book_name
         page_data = await self.lib.search(q, exact=True,extensions=[Extension.PDF, Extension.EPUB])
-        book_set = await page_data.next()
+        book_set = page_data.result
         match_set = []
         for book in book_set:
             # if book['isbn'] != task.isbn:
@@ -105,6 +111,7 @@ async def fetch_one(task, proxy_index):
 
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
+        print(33)
         detail = await info.fetch()
         # with open(f"detail.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(detail, ensure_ascii=False))
@@ -165,7 +172,7 @@ async def dispatch_task(concurrency=10):
     page = 1
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-    batch_size = 50  # 每批处理50条数据
+    batch_size = 5  # 每批处理50条数据
     
     while dispatch_task_status:
         fetch_tasks = FetchTaskRepo.query(page, 1000, status=1)
@@ -203,12 +210,20 @@ async def dispatch_task(concurrency=10):
             # 每批处理完后暂停一下，避免对代理服务器造成过大压力
             await asyncio.sleep(1)
 
+def run_spider():
+    asyncio.run(
+        fetch_one(
+            FetchTask(id=1, isbn="", book_name="小王子", type="book_name"),
+            0
+        )
+    )
+
 
 if __name__ == '__main__':
-    # asyncio.run(fetch_one(FetchTask(isbn="1118482432", book_name="", type="isbn")))
-    # asyncio.run(dispatch_task())
-    try:
-        asyncio.run(dispatch_task())
-    except KeyboardInterrupt:
-        logger.info("Program interrupted by user")
-        exit(0)
+    asyncio.run(
+        fetch_one(
+            FetchTask(id=1, isbn="", book_name="中国科学院民族研究所广西少数民族社会历史调查组", type="book_name"),
+            -1
+        )
+    )
+

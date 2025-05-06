@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from helper.playwrightx import new_browser
 from logger.logger import logger
 from repo.book_repo import BookRepo
-from spider.zlibrary_spider import dispatch_task, stop_dispatch_task
+from spider.zlibrary_spider import dispatch_task, stop_dispatch_task, run_spider
 
 
 class TaskManager:
@@ -105,5 +105,6 @@ if __name__ == "__main__":
     # FetchTaskRepo.update_status_by_id(4814, 3)
     # print(book)
     # download_manager.download_book(book)
+    # run_spider()
     asyncio.run(main())
 

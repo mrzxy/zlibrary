@@ -42,6 +42,7 @@ class SearchPaginator:
 
     def parse_page(self, page):
         soup = bsoup(page, features="lxml")
+
         box = soup.find("div", {"id": "searchResultBox"})
         if not box or type(box) is not Tag:
             raise ParseError("Could not parse book list.")
