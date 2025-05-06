@@ -14,7 +14,7 @@ HEAD = {
 }
 
 
-TIMEOUT = aiohttp.ClientTimeout(total=5, connect=5, sock_connect=5, sock_read=5)
+TIMEOUT = aiohttp.ClientTimeout(total=20, connect=0, sock_connect=10, sock_read=20)
 
 HEAD_TIMEOUT = aiohttp.ClientTimeout(total=4, connect=0, sock_connect=4, sock_read=4)
 
