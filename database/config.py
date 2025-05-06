@@ -1,12 +1,9 @@
 import json
 
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-import contextlib
 import os
 from dotenv import load_dotenv
 from peewee import MySQLDatabase
+import pymysql
 
 # 加载环境变量
 load_dotenv()
@@ -26,7 +23,7 @@ database = MySQLDatabase(
     user=DB_USER,    # 用户名
     password=DB_PASSWORD, # 密码
     host=DB_HOST,    # 主机
-    port=int(DB_PORT)            # 端口
+    port=int(DB_PORT),            # 端口
 )
 
 def init_db():

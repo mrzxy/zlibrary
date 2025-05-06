@@ -35,8 +35,8 @@ class ZlibrarySpider:
         self.lib = zlibrary.AsyncZlib(proxy_list=[PROXY_LIST[proxy_index % len(PROXY_LIST)]])
 
     async def login(self):
-        email = "xuyong.mr@gmail.com"
-        password = "123123aa"
+        email = ""
+        password = ""
         await self.lib.login(email, password)
 
     async def search(self, task):
@@ -47,11 +47,11 @@ class ZlibrarySpider:
         for book in book_set:
             # if book['isbn'] != task.isbn:
             #     continue
-            # if book['name'] == task.book_name:
-            #     match_set.append(book)
+            if book['name'] == task.book_name:
+                match_set.append(book)
             # TODO
-            match_set.append(book)
-            break
+            # match_set.append(book)
+            # break
 
         if len(match_set) == 0:
             return []

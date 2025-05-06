@@ -1,6 +1,7 @@
 import asyncio
 import signal
-
+import pymysql
+pymysql.install_as_MySQLdb()
 from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
 
