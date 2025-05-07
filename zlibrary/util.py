@@ -79,7 +79,9 @@ class AsyncScraperPool:
 
     async def release_scraper(self, scraper):
         async with self.lock:
-            self.pool.put_nowait(scraper)
+            scraper.close()
+            new_scraper = cloudscraper.create_scraper()
+            self.pool.put_nowait(new_scraper)
 
 pool = AsyncScraperPool(pool_size=30)
 
@@ -87,18 +89,17 @@ async def async_fetch(url, proxy=None):
     scraper = await pool.get_scraper()
     # 定义同步请求函数
     def sync_request():
-        return scraper.get(
+        with scraper.get(
             url,
             proxies={"http": proxy, "https": proxy} if proxy else None,
             timeout=10
-        )
+        ) as rr:
+            return rr.text()
 
     try:
         # 将同步请求放到线程池中执行
-        response = await asyncio.to_thread(sync_request)
-        if response is None:
-            raise ValueError("Response is None")
-        return response.text
+        response_text = await asyncio.to_thread(sync_request)
+        return response_text
     except Exception as e:
         print(f"请求失败: {e}")
         return None
