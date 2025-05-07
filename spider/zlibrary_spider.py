@@ -223,7 +223,7 @@ async def dispatch_task(concurrency=10):
                     sleep_time = 60
                     logger.warning(f"成功率低于50%, 休眠 {sleep_time} 秒")
                 else:
-                    sleep_time = 1
+                    sleep_time = 5
 
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
