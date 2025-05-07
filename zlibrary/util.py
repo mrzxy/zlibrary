@@ -96,6 +96,8 @@ async def async_fetch(url, proxy=None):
     try:
         # 将同步请求放到线程池中执行
         response = await asyncio.to_thread(sync_request)
+        if response is None:
+            raise ValueError("Response is None")
         return response.text
     except Exception as e:
         print(f"请求失败: {e}")

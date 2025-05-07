@@ -143,6 +143,7 @@ async def fetch_one(task, proxy_index):
             'pages': detail.get('pages', 0),  # 页数
             'isbn_10': detail.get("ISBN 10"),  # ISBN-10
             'isbn_13': detail.get("ISBN 13"),  # ISBN-13
+            'mix_isbn': detail.get("ISBN, ASIN, ISSN", ''),  # Mix ISBN
             'content_type': '',  # 内容类型
             'file_size': '',  # 文件大小
             'download_url': '',  # 下载URL
@@ -216,7 +217,7 @@ async def dispatch_task(concurrency=10):
 def run_spider():
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="", book_name="飛狐外傳", type="book_name"),
+            FetchTask(id=1, isbn="", book_name="周恩来传", type="book_name"),
             0
         )
     )
@@ -225,7 +226,7 @@ def run_spider():
 if __name__ == '__main__':
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="", book_name="飛狐外傳", type="book_name"),
+            FetchTask(id=1, isbn="", book_name="周恩来传", type="book_name"),
             -1
         )
     )
