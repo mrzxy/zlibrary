@@ -1,5 +1,6 @@
-import aiohttp
+from queue import Queue
 import asyncio
+import aiohttp
 
 import cloudscraper
 from aiohttp import ClientSession
@@ -64,11 +65,26 @@ async def fetch_with_retry(url, proxy_list=None, cookies=None, max_retries=3, ti
     raise Exception(f"Max retries {max_retries} reached")
 
 
+class AsyncScraperPool:
+    def __init__(self, pool_size=10):
+        self.pool = asyncio.Queue()
+        self.lock = asyncio.Lock()  # 虽在单线程中可能无需锁，但保留用于复杂逻辑
+        for _ in range(pool_size):
+            scraper = cloudscraper.create_scraper()
+            self.pool.put_nowait(scraper)
 
+    async def get_scraper(self):
+        async with self.lock:  # 若确认无竞态，可移除锁
+            return await self.pool.get()
+
+    async def release_scraper(self, scraper):
+        async with self.lock:
+            self.pool.put_nowait(scraper)
+
+pool = AsyncScraperPool(pool_size=30)
 
 async def async_fetch(url, proxy=None):
-    scraper = cloudscraper.create_scraper()
-
+    scraper = await pool.get_scraper()
     # 定义同步请求函数
     def sync_request():
         return scraper.get(
@@ -84,6 +100,8 @@ async def async_fetch(url, proxy=None):
     except Exception as e:
         print(f"请求失败: {e}")
         return None
+    finally:
+        pool.release_scraper(scraper)
 
 
 
@@ -107,7 +125,7 @@ async def GET_request(url, cookies=None, proxy_list=None) -> str:
         #     cookies=cookies,
         #     timeout=TIMEOUT,
         # )
-        return await async_fetch(url)
+        return await async_fetch(url, proxies)
 
 
     except asyncio.exceptions.CancelledError:
