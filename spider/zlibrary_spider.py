@@ -220,7 +220,7 @@ async def dispatch_task(concurrency=10):
 
                 # 动态调整休眠时间
                 if success_rate < 50:
-                    sleep_time = 30
+                    sleep_time = 60
                     logger.warning(f"成功率低于50%, 休眠 {sleep_time} 秒")
                 else:
                     sleep_time = 1
@@ -228,7 +228,7 @@ async def dispatch_task(concurrency=10):
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
                 success_rate = 0  # 超时视为全部失败
-                sleep_time = 10  # 强制休眠10秒
+                sleep_time = 30  # 强制休眠10秒
             except Exception as e:
                 logger.error(f"Error processing batch {i//batch_size + 1}: {str(e)}")
             finally:
