@@ -102,6 +102,10 @@ class AsyncZlib:
 
     async def login(self, email: str, password: str):
         self.mirror = ZLIB_DOMAIN.strip("/")
+        self.cookies = {
+            "siteLanguage": "en",
+            "selectedSiteMode": "books"
+        }
         return
         data = {
             "isModal": True,

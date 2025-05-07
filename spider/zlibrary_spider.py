@@ -31,6 +31,7 @@ async def NewZlibrarySpider(proxy_index=0):
 
 class ZlibrarySpider:
     def __init__(self, proxy_index=0):
+        # proxy_index = -1
         self.proxy_index = proxy_index
         cur_proxy = []
         if proxy_index > -1:
@@ -42,14 +43,14 @@ class ZlibrarySpider:
 
 
     async def login(self):
-        email = ""
-        password = ""
+        email = "xuyong.mr@gmail.com"
+        password = "123123aa"
         await self.lib.login(email, password)
 
     async def search(self, task):
         q = task.isbn if task.type == "isbn" else task.book_name
-        page_data = await self.lib.search(q, exact=True,extensions=[Extension.PDF, Extension.EPUB])
-        book_set = page_data.result
+        paginator = await self.lib.search(q, exact=True,extensions=[Extension.PDF, Extension.EPUB])
+        book_set = await paginator.next()
         match_set = []
         for book in book_set:
             # if book['isbn'] != task.isbn:
@@ -111,7 +112,6 @@ async def fetch_one(task, proxy_index):
 
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
-        print(33)
         detail = await info.fetch()
         # with open(f"detail.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(detail, ensure_ascii=False))
@@ -198,7 +198,7 @@ async def dispatch_task(concurrency=10):
                 # 添加超时控制，每批任务最多执行30秒
                 await asyncio.wait_for(
                     asyncio.gather(*(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
-                    timeout=30
+                    timeout=180
                 )
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
@@ -213,7 +213,7 @@ async def dispatch_task(concurrency=10):
 def run_spider():
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="", book_name="小王子", type="book_name"),
+            FetchTask(id=1, isbn="", book_name="飛狐外傳", type="book_name"),
             0
         )
     )
@@ -222,7 +222,7 @@ def run_spider():
 if __name__ == '__main__':
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="", book_name="中国科学院民族研究所广西少数民族社会历史调查组", type="book_name"),
+            FetchTask(id=1, isbn="", book_name="飛狐外傳", type="book_name"),
             -1
         )
     )

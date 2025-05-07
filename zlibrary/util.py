@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-
+from aiohttp_retry import RetryClient, ExponentialRetry
 import requests
 from aiohttp_socks import ChainProxyConnector
 
@@ -19,6 +19,46 @@ TIMEOUT = aiohttp.ClientTimeout(total=30, connect=0, sock_connect=20, sock_read=
 
 HEAD_TIMEOUT = aiohttp.ClientTimeout(total=10, connect=0, sock_connect=5, sock_read=5)
 
+retry_options = ExponentialRetry(
+    attempts=5,  # 最大重试次数
+    exceptions=[aiohttp.ClientConnectionError, aiohttp.ClientError]  # 需要重试的异常
+)
+
+async def fetch_with_retry(url, proxy_list=None, cookies=None, max_retries=3, timeout=30):
+    retries = 0
+    while retries < max_retries:
+        if retries > 0:
+            pass
+            # logger.info(f"Retrying {url}")
+        try:
+            async with aiohttp.ClientSession(
+                headers=HEAD,
+                cookie_jar=aiohttp.CookieJar(unsafe=True),
+                cookies=cookies,
+                timeout=TIMEOUT,  # 注意这里使用 ClientTimeout 类
+                connector=ChainProxyConnector.from_urls(proxy_list) if proxy_list else None,
+            ) as sess:
+                logger.info("GET %s" % url)
+                async with sess.get(url) as resp:
+                    if resp.status == 200:
+                        return await resp.text()
+                    if 500 <= resp.status < 600:
+                        raise aiohttp.ClientResponseError(
+                            status=resp.status,
+                            message=f"Server error: {resp.status}"
+                        )
+                    resp.raise_for_status()
+        # 修正异常捕获：用 asyncio.TimeoutError 替代 ClientTimeoutError
+        except (aiohttp.ClientConnectionError, asyncio.TimeoutError, aiohttp.ClientConnectionResetError, ConnectionResetError) as e:
+            retries += 1
+            if retries >= max_retries:
+                raise Exception(f"Max retries {max_retries} reached")
+            wait = min(2 ** retries, 10)
+            await asyncio.sleep(wait)
+        except Exception as e:
+            print(type(e))
+            raise
+    raise Exception(f"Max retries {max_retries} reached")
 
 async def GET_request(url, cookies=None, proxy_list=None) -> str:
     try:
@@ -32,16 +72,15 @@ async def GET_request(url, cookies=None, proxy_list=None) -> str:
         # print(proxies)
         # response = requests.get(url, headers=HEAD, cookies=cookies, proxies=proxies)
         # return response.text
-        async with aiohttp.ClientSession(
-            headers=HEAD,
-            cookie_jar=aiohttp.CookieJar(unsafe=True),
+        return await fetch_with_retry(
+            url=url,
+            proxy_list=proxy_list,
+            max_retries=5,
             cookies=cookies,
             timeout=TIMEOUT,
-            connector=ChainProxyConnector.from_urls(proxy_list) if proxy_list else None,
-        ) as sess:
-            logger.info("GET %s" % url)
-            async with sess.get(url) as resp:
-                return await resp.text()
+        )
+
+
     except asyncio.exceptions.CancelledError:
         raise LoopError("Asyncio loop has been closed before request could finish.")
 
