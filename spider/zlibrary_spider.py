@@ -173,6 +173,7 @@ async def sem_fetch_one(sem, task, proxy_index):
             return
         # 1 ok 2 fail
         result = await fetch_one(task, proxy_index)
+        return result
 
 
 async def dispatch_task(concurrency=10):
@@ -204,7 +205,8 @@ async def dispatch_task(concurrency=10):
             try:
                 # 添加超时控制，每批任务最多执行30秒
                 results = await asyncio.wait_for(
-                    asyncio.gather(*(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
+                    asyncio.gather(
+                        *(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
                     timeout=50
                 )
 
