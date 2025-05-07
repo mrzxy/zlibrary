@@ -4,7 +4,7 @@ from datetime import datetime
 import requests
 from openpyxl.styles.fills import fills
 
-from database.config import PROXY_LIST
+from database.config import PROXY_LIST, DIRECT
 from helper.helper import size_to_bytes, find_largest_book, extract_domain
 from logger.logger import logger
 from models.models import FetchTask
@@ -24,6 +24,8 @@ def stop_dispatch_task():
     dispatch_task_status = False
 
 async def NewZlibrarySpider(proxy_index=0):
+    if DIRECT == 1:
+        proxy_index = -1
     ins = ZlibrarySpider(proxy_index)
     await ins.login()
     return ins
@@ -94,6 +96,7 @@ class ZlibrarySpider:
 
 async def fetch_one(task, proxy_index):
     try:
+        print(f"Fetching book: {task.book_name}")
         spider = await NewZlibrarySpider(proxy_index)
         fetch_records = await spider.search(task)
         if len(fetch_records) < 1:

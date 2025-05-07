@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 
 import cloudscraper
+from aiohttp import ClientSession
 from aiohttp_retry import RetryClient, ExponentialRetry
 import requests
 from aiohttp_socks import ChainProxyConnector
@@ -62,10 +63,30 @@ async def fetch_with_retry(url, proxy_list=None, cookies=None, max_retries=3, ti
             raise
     raise Exception(f"Max retries {max_retries} reached")
 
-async def fetch_v2(url, proxies):
+
+
+
+async def async_fetch(url, proxy=None):
     scraper = cloudscraper.create_scraper()
-    response = scraper.get(url, proxies=proxies)
-    return response.text
+
+    # 定义同步请求函数
+    def sync_request():
+        return scraper.get(
+            url,
+            proxies={"http": proxy, "https": proxy} if proxy else None,
+            timeout=15
+        )
+
+    try:
+        # 将同步请求放到线程池中执行
+        response = await asyncio.to_thread(sync_request)
+        return response.text
+    except Exception as e:
+        print(f"请求失败: {e}")
+        return None
+
+
+
 
 async def GET_request(url, cookies=None, proxy_list=None) -> str:
     try:
@@ -86,7 +107,7 @@ async def GET_request(url, cookies=None, proxy_list=None) -> str:
         #     cookies=cookies,
         #     timeout=TIMEOUT,
         # )
-        return await fetch_v2(url, proxies)
+        return await async_fetch(url)
 
 
     except asyncio.exceptions.CancelledError:

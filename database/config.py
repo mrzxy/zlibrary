@@ -18,6 +18,7 @@ DOWNLOAD_DIR = os.getenv('DOWNLOAD_DIR', './downloads')
 proxy_str = os.getenv('PROXY')
 WORKER_NUM=int(os.getenv('WORKER_NUM', 1))
 PROXY_LIST = json.loads(proxy_str) if proxy_str else []
+DIRECT = int(os.getenv('DIRECT'))
 
 database = MySQLDatabase(
     DB_NAME,      # 数据库名
