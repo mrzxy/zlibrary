@@ -172,7 +172,7 @@ async def dispatch_task(concurrency=10):
     page = 1
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-    batch_size = 5  # 每批处理50条数据
+    batch_size = 50  # 每批处理50条数据
     
     while dispatch_task_status:
         fetch_tasks = FetchTaskRepo.query(page, 1000, status=1)
@@ -198,7 +198,7 @@ async def dispatch_task(concurrency=10):
                 # 添加超时控制，每批任务最多执行30秒
                 await asyncio.wait_for(
                     asyncio.gather(*(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
-                    timeout=180
+                    timeout=50
                 )
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
