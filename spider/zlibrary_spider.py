@@ -102,7 +102,7 @@ async def fetch_one(task, proxy_index):
         if len(fetch_records) < 1:
             logger.warning(f"根据{task.book_name} 没有找到匹配的书籍")
             FetchTaskRepo.update_status_by_id(task.id, 4)
-            return None
+            return 1
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
         # format_resp = await spider.get_format(info.get('id'))
@@ -159,9 +159,11 @@ async def fetch_one(task, proxy_index):
             FetchTaskRepo.update_status_by_id(task.id, 2)
 
 
+        return 1
+
     except Exception as e:
         logger.error(f"Error fetching book: {str(e)}")
-        return None
+        return 0
 
 
 async def sem_fetch_one(sem, task, proxy_index):
@@ -169,7 +171,8 @@ async def sem_fetch_one(sem, task, proxy_index):
         if not dispatch_task_status:
             # logger.info("dispatch_task_status is False, stop dispatch_task")
             return
-        await fetch_one(task, proxy_index)
+        # 1 ok 2 fail
+        result = await fetch_one(task, proxy_index)
 
 
 async def dispatch_task(concurrency=10):
@@ -200,19 +203,38 @@ async def dispatch_task(concurrency=10):
             
             try:
                 # 添加超时控制，每批任务最多执行30秒
-                await asyncio.wait_for(
+                results = await asyncio.wait_for(
                     asyncio.gather(*(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
                     timeout=50
                 )
+
+                success_count = sum(
+                    1 for result in results
+                    if not isinstance(result, Exception) and result is not None
+                )
+                total_tasks = len(batch_tasks)
+                success_rate = (success_count / total_tasks) * 100
+                logger.info(f"批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
+
+                # 动态调整休眠时间
+                if success_rate < 50:
+                    sleep_time = 30
+                    logger.warning(f"成功率低于50%, 休眠 {sleep_time} 秒")
+                else:
+                    sleep_time = 1
+
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
+                success_rate = 0  # 超时视为全部失败
+                sleep_time = 10  # 强制休眠10秒
             except Exception as e:
                 logger.error(f"Error processing batch {i//batch_size + 1}: {str(e)}")
+            finally:
             
-            proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)
-            
-            # 每批处理完后暂停一下，避免对代理服务器造成过大压力
-            await asyncio.sleep(1)
+                proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)
+
+                # 每批处理完后暂停一下，避免对代理服务器造成过大压力
+                await asyncio.sleep(sleep_time)
 
 def run_spider():
     asyncio.run(
