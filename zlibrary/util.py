@@ -91,7 +91,7 @@ async def async_fetch(url, proxy=None):
     def sync_request():
         resp =  scraper.get(
             url,
-            proxies={"http": proxy, "https": proxy} if proxy else None,
+            proxies=proxy if proxy else None,
             timeout=10
         )
         return resp.text
