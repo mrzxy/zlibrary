@@ -89,17 +89,17 @@ async def async_fetch(url, proxy=None):
     scraper = await pool.get_scraper()
     # 定义同步请求函数
     def sync_request():
-        with scraper.get(
+        resp =  scraper.get(
             url,
             proxies={"http": proxy, "https": proxy} if proxy else None,
             timeout=10
-        ) as rr:
-            return rr.text()
+        )
+        return resp.text
 
     try:
         # 将同步请求放到线程池中执行
-        response_text = asyncio.to_thread(sync_request)
-        return response_text
+        response = await asyncio.to_thread(sync_request)
+        return response
     except Exception as e:
         print(f"请求失败: {e}")
         return None
