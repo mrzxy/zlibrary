@@ -105,6 +105,6 @@ if __name__ == "__main__":
     # FetchTaskRepo.update_status_by_id(4814, 3)
     # print(book)
     # download_manager.download_book(book)
-    run_spider()
-    # asyncio.run(main())
+    # run_spider()
+    asyncio.run(main())
 
