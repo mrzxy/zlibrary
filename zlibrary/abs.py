@@ -54,8 +54,6 @@ class SearchPaginator:
             self.result = []
             return
 
-        with open("test.html", "w") as f:
-            f.write(str(box.prettify()))
         book_list = box.findAll("div", {"class": "book-item"})
         if not book_list:
             raise ParseError("Could not find the book list.")

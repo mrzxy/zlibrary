@@ -1,5 +1,7 @@
 import aiohttp
 import asyncio
+
+import cloudscraper
 from aiohttp_retry import RetryClient, ExponentialRetry
 import requests
 from aiohttp_socks import ChainProxyConnector
@@ -60,25 +62,31 @@ async def fetch_with_retry(url, proxy_list=None, cookies=None, max_retries=3, ti
             raise
     raise Exception(f"Max retries {max_retries} reached")
 
+async def fetch_v2(url, proxies):
+    scraper = cloudscraper.create_scraper()
+    response = scraper.get(url, proxies=proxies)
+    return response.text
+
 async def GET_request(url, cookies=None, proxy_list=None) -> str:
     try:
-        # proxies = None
-        # if proxy_list and len(proxy_list) > 0:
-        #     proxies = {
-        #         "http": proxy_list[0],
-        #         "https": proxy_list[0],
-        #     }
+        proxies = None
+        if proxy_list and len(proxy_list) > 0:
+            proxies = {
+                "http": proxy_list[0],
+                "https": proxy_list[0],
+            }
         #
         # print(proxies)
         # response = requests.get(url, headers=HEAD, cookies=cookies, proxies=proxies)
         # return response.text
-        return await fetch_with_retry(
-            url=url,
-            proxy_list=proxy_list,
-            max_retries=5,
-            cookies=cookies,
-            timeout=TIMEOUT,
-        )
+        # return await fetch_with_retry(
+        #     url=url,
+        #     proxy_list=proxy_list,
+        #     max_retries=5,
+        #     cookies=cookies,
+        #     timeout=TIMEOUT,
+        # )
+        return await fetch_v2(url, proxies)
 
 
     except asyncio.exceptions.CancelledError:
