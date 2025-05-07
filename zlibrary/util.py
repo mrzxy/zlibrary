@@ -90,7 +90,7 @@ async def async_fetch(url, proxy=None):
         return scraper.get(
             url,
             proxies={"http": proxy, "https": proxy} if proxy else None,
-            timeout=15
+            timeout=10
         )
 
     try:
@@ -101,7 +101,7 @@ async def async_fetch(url, proxy=None):
         print(f"请求失败: {e}")
         return None
     finally:
-        pool.release_scraper(scraper)
+        await pool.release_scraper(scraper)
 
 
 
