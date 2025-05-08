@@ -169,7 +169,7 @@ async def fetch_one(task, proxy_index):
         return 0
 
 
-async def sem_fetch_one(sem, task, proxy_index):
+async def sem_fetch_one(sem, task):
     async with sem:
         if not dispatch_task_status:
             # logger.info("dispatch_task_status is False, stop dispatch_task")
@@ -178,8 +178,12 @@ async def sem_fetch_one(sem, task, proxy_index):
         # print(f'fetch {task.book_name}')
         # return 1
         # 1 ok 2 fail
-        result = await fetch_one(task, proxy_index)
-        return result
+        try:
+            result = await fetch_one(task)
+            return result
+        except Exception as e:
+            logger.warning(f"Task failed: {e}")
+            return None
 
 
 async def dispatch_task(concurrency=10):
@@ -200,21 +204,17 @@ async def dispatch_task(concurrency=10):
         # 分批处理任务
         for i in range(0, len(fetch_tasks), batch_size):
             batch_tasks = fetch_tasks[i:i + batch_size]
-            # logger.info(f"Processing batch {i//batch_size + 1}, tasks: {len(batch_tasks)}")
-
             if not dispatch_task_status:
                 break
 
-            
-            # 为每个任务分配一个代理，代理会循环使用
-            tasks_with_proxy = [(task, (proxy_index + j) % len(PROXY_LIST)) for j, task in enumerate(batch_tasks)]
-            
             try:
                 # 添加超时控制，每批任务最多执行30秒
                 results = await asyncio.wait_for(
                     asyncio.gather(
-                        *(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
-                    timeout=30
+                        *(sem_fetch_one(sem, task) for task in batch_tasks),
+                        return_exceptions=True
+                    ),
+                    timeout=60
                 )
                 if not dispatch_task_status:
                     break
@@ -227,12 +227,9 @@ async def dispatch_task(concurrency=10):
                 success_rate = (success_count / total_tasks) * 100
                 logger.info(f"批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
 
-                # 动态调整休眠时间
+                sleep_time = 60 if success_rate < 50 else 3
                 if success_rate < 50:
-                    sleep_time = 60
-                    logger.warning(f"成功率低于50%, 休眠 {sleep_time} 秒")
-                else:
-                    sleep_time = 0
+                    logger.warning(f"成功率低于50%，休眠 {sleep_time} 秒")
 
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
@@ -240,7 +237,7 @@ async def dispatch_task(concurrency=10):
                 sleep_time = 30  # 强制休眠10秒
             except Exception as e:
                 logger.error(f"Error processing batch {i//batch_size + 1}: {str(e)}")
-                sleep_time = 30  # 强制休眠10秒
+                sleep_time = 10  # 强制休眠10秒
             finally:
             
                 proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)
