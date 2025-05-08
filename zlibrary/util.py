@@ -75,14 +75,13 @@ class AsyncScraperPool:
             self.pool.put_nowait(scraper)
 
     async def get_scraper(self):
-        async with self.lock:  # 若确认无竞态，可移除锁
-            return await self.pool.get()
+        return await self.pool.get()
 
     async def release_scraper(self, scraper):
-        async with self.lock:
-            scraper.close()
-            new_scraper = cloudscraper.create_scraper()
-            self.pool.put_nowait(new_scraper)
+        # scraper.close()
+        # new_scraper = cloudscraper.create_scraper()
+        # self.pool.put_nowait(new_scraper)
+        self.pool.put_nowait(scraper)
 
 
 pool = AsyncScraperPool(pool_size=int(os.getenv("POOL_SIZE")))

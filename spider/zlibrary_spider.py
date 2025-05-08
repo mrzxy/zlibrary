@@ -227,7 +227,7 @@ async def dispatch_task(concurrency=10):
                 success_rate = (success_count / total_tasks) * 100
                 logger.info(f"批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
 
-                sleep_time = 60 if success_rate < 50 else 3
+                sleep_time = 60 if success_rate < 50 else 0
                 if success_rate < 50:
                     logger.warning(f"成功率低于50%，休眠 {sleep_time} 秒")
 
