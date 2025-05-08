@@ -99,7 +99,6 @@ class ZlibrarySpider:
 
 async def fetch_one(task, proxy_index=-1):
     try:
-        print(f"Fetching book: {task.book_name}")
         spider = await NewZlibrarySpider(proxy_index)
         fetch_records = await spider.search(task)
         if len(fetch_records) < 1:
@@ -168,8 +167,8 @@ async def fetch_one(task, proxy_index=-1):
         logger.error(f"Error fetching book: {str(e)}")
         return 0
 
-
-async def sem_fetch_one(sem, task):
+batch_size = int(os.getenv('BATCH_SIZE'))
+async def sem_fetch_one(sem, index, task):
     async with sem:
         if not dispatch_task_status:
             # logger.info("dispatch_task_status is False, stop dispatch_task")
@@ -179,6 +178,7 @@ async def sem_fetch_one(sem, task):
         # return 1
         # 1 ok 2 fail
         try:
+            logger.info(f"task {index}/{batch_size} {task.book_name}")
             result = await fetch_one(task)
             return result
         except Exception as e:
@@ -190,7 +190,7 @@ async def dispatch_task(concurrency=10):
     page = 1
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-    batch_size = int(os.getenv('BATCH_SIZE'))  # 每批处理50条数据
+  # 每批处理50条数据
     sleep_time = 10
 
     while dispatch_task_status:
@@ -211,7 +211,7 @@ async def dispatch_task(concurrency=10):
                 # 添加超时控制，每批任务最多执行30秒
                 results = await asyncio.wait_for(
                     asyncio.gather(
-                        *(sem_fetch_one(sem, task) for task in batch_tasks),
+                        *(sem_fetch_one(sem, index, batch_tasks[index]) for index in range(0, len(batch_tasks))),
                         return_exceptions=True
                     ),
                     timeout=int(os.getenv("BATCH_TIMEOUT"))
