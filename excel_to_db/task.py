@@ -29,16 +29,16 @@ def run_bak():
     dfs = pd.read_excel("./excel_to_db/data.xlsx",  sheet_name=None)
     data_list = []
     for sheet_name, df in dfs.items():
-        kind = "isbn"
-        if sheet_name == "按书名下":
-            kind = "book_name"
+
+        kind = "book_name"
+
         for index, row in df.iterrows():
             [book_name, isbn] = row.to_list()
 
             data_list.append({
                 'type':kind,
                 'book_name':book_name,
-                'isbn':isbn
+                'isbn':""
             })
 
     if len(data_list) > 0:
