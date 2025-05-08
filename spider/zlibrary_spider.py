@@ -105,7 +105,6 @@ async def fetch_one(task, proxy_index):
             return 1
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
-        print(info)
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
         #     logger.warning(f"获取{info.get('id')}的格式失败")
@@ -117,7 +116,6 @@ async def fetch_one(task, proxy_index):
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
         detail = await info.fetch()
-        print(detail)
         # with open(f"detail.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(detail, ensure_ascii=False))
 
@@ -182,7 +180,7 @@ async def dispatch_task(concurrency=10):
     page = 1
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-    batch_size = 50  # 每批处理50条数据
+    batch_size = 100  # 每批处理50条数据
     
     while dispatch_task_status:
         fetch_tasks = FetchTaskRepo.query(page, 1000, status=1)
