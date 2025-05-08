@@ -1,6 +1,9 @@
 import json
+import os
 import time
 from datetime import datetime
+import random
+
 import requests
 from openpyxl.styles.fills import fills
 
@@ -171,6 +174,9 @@ async def sem_fetch_one(sem, task, proxy_index):
         if not dispatch_task_status:
             # logger.info("dispatch_task_status is False, stop dispatch_task")
             return
+        # await asyncio.sleep(random.randint(1, 5))
+        # print(f'fetch {task.book_name}')
+        # return 1
         # 1 ok 2 fail
         result = await fetch_one(task, proxy_index)
         return result
@@ -180,8 +186,9 @@ async def dispatch_task(concurrency=10):
     page = 1
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-    batch_size = 100  # 每批处理50条数据
-    
+    batch_size = int(os.getenv('BATCH_SIZE'))  # 每批处理50条数据
+    sleep_time = 10
+
     while dispatch_task_status:
         fetch_tasks = FetchTaskRepo.query(page, 1000, status=1)
         logger.info(f"dispatch_task: page {page}, total tasks: {len(fetch_tasks)}")
@@ -207,8 +214,10 @@ async def dispatch_task(concurrency=10):
                 results = await asyncio.wait_for(
                     asyncio.gather(
                         *(sem_fetch_one(sem, task, proxy_idx) for task, proxy_idx in tasks_with_proxy), return_exceptions=True),
-                    timeout=50
+                    timeout=30
                 )
+                if not dispatch_task_status:
+                    break
 
                 success_count = sum(
                     1 for result in results
@@ -223,7 +232,7 @@ async def dispatch_task(concurrency=10):
                     sleep_time = 60
                     logger.warning(f"成功率低于50%, 休眠 {sleep_time} 秒")
                 else:
-                    sleep_time = 5
+                    sleep_time = 0
 
             except asyncio.TimeoutError:
                 logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
@@ -231,6 +240,7 @@ async def dispatch_task(concurrency=10):
                 sleep_time = 30  # 强制休眠10秒
             except Exception as e:
                 logger.error(f"Error processing batch {i//batch_size + 1}: {str(e)}")
+                sleep_time = 30  # 强制休眠10秒
             finally:
             
                 proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)

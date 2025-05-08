@@ -83,7 +83,7 @@ class AsyncScraperPool:
             new_scraper = cloudscraper.create_scraper()
             self.pool.put_nowait(new_scraper)
 
-pool = AsyncScraperPool(pool_size=30)
+pool = AsyncScraperPool(pool_size=200)
 
 async def async_fetch(url, proxy=None):
     scraper = await pool.get_scraper()
