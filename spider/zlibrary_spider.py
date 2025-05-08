@@ -105,6 +105,7 @@ async def fetch_one(task, proxy_index):
             return 1
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
+        print(info)
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
         #     logger.warning(f"获取{info.get('id')}的格式失败")
@@ -116,6 +117,7 @@ async def fetch_one(task, proxy_index):
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
         detail = await info.fetch()
+        print(detail)
         # with open(f"detail.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(detail, ensure_ascii=False))
 
@@ -135,7 +137,7 @@ async def fetch_one(task, proxy_index):
 
         book = BookRepo.insert_one({
             'book_id': info.get('id'),  # 图书ID
-            'category': info.get('categories', ''),  # 分类
+            'category': detail.get('categories', ''),  # 分类
             'year': info.get('year'),  # 出版年份
             'edition': detail.get('edition'),  # 版次
             'publisher': detail.get('publisher'),  # 出版社
@@ -241,7 +243,7 @@ async def dispatch_task(concurrency=10):
 def run_spider():
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="", book_name="周恩来传", type="book_name"),
+            FetchTask(id=1, isbn="", book_name="比較憲法", type="book_name"),
             0
         )
     )

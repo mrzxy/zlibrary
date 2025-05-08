@@ -512,6 +512,12 @@ class BookItem(dict):
                 val = isbn.find("div", {"class": "property_value"})
                 parsed[txt] = val.text.strip()
 
+            content_type = details.find("div", {"class": "property_content_type"})
+            if content_type and type(content_type) is Tag:
+                content_type = content_type.find("span", {"class": "property_value"})
+                if content_type:
+                    parsed['content_type'] = content_type.text.strip()
+
             ipfs = details.find("div", {"class": "property_ipfs_cid"})
             if ipfs and type(ipfs) is Tag:
                 ipfs = ipfs.find("div", {"class": "property_value"})
