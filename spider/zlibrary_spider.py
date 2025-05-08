@@ -97,7 +97,7 @@ class ZlibrarySpider:
         pass
 
 
-async def fetch_one(task, proxy_index):
+async def fetch_one(task, proxy_index=-1):
     try:
         print(f"Fetching book: {task.book_name}")
         spider = await NewZlibrarySpider(proxy_index)
