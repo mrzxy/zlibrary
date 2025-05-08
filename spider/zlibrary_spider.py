@@ -214,7 +214,7 @@ async def dispatch_task(concurrency=10):
                         *(sem_fetch_one(sem, task) for task in batch_tasks),
                         return_exceptions=True
                     ),
-                    timeout=60
+                    timeout=int(os.getenv("BATCH_TIMEOUT"))
                 )
                 if not dispatch_task_status:
                     break

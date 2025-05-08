@@ -1,3 +1,4 @@
+import os
 from queue import Queue
 import asyncio
 import aiohttp
@@ -83,7 +84,8 @@ class AsyncScraperPool:
             new_scraper = cloudscraper.create_scraper()
             self.pool.put_nowait(new_scraper)
 
-pool = AsyncScraperPool(pool_size=200)
+
+pool = AsyncScraperPool(pool_size=int(os.getenv("POOL_SIZE")))
 
 async def async_fetch(url, proxy=None):
     scraper = await pool.get_scraper()
