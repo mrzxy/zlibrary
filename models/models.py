@@ -2,12 +2,12 @@ from peewee import (
     Model, AutoField, CharField, IntegerField, BigIntegerField, TextField, TimestampField, SmallIntegerField,
     DateTimeField
 )
-from database.config import database
+from database.config import get_database
 import time
 
 class BaseModel(Model):
     class Meta:
-        database = database
+        database = get_database()
 
 class Book(BaseModel):
     id = AutoField()

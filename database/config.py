@@ -20,15 +20,23 @@ WORKER_NUM=int(os.getenv('WORKER_NUM', 1))
 PROXY_LIST = json.loads(proxy_str) if proxy_str else []
 DIRECT = int(os.getenv('DIRECT'))
 
-database = MySQLDatabase(
-    DB_NAME,      # 数据库名
-    user=DB_USER,    # 用户名
-    password=DB_PASSWORD, # 密码
-    host=DB_HOST,    # 主机
-    port=int(DB_PORT),            # 端口
-)
+def get_database():
+    """获取数据库连接，每个进程都会创建自己的连接"""
+    return MySQLDatabase(
+        DB_NAME,      # 数据库名
+        user=DB_USER,    # 用户名
+        password=DB_PASSWORD, # 密码
+        host=DB_HOST,    # 主机
+        port=int(DB_PORT),            # 端口
+    )
 
 def init_db():
-    database.connect()
-def close_db():
-    database.close()
+    """初始化数据库连接"""
+    db = get_database()
+    db.connect()
+    return db
+
+def close_db(db):
+    """关闭数据库连接"""
+    if not db.is_closed():
+        db.close()
