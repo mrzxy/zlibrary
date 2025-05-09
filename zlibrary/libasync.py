@@ -21,7 +21,7 @@ from typing import Optional
 import json
 
 
-ZLIB_DOMAIN = "https://zh.101wes.online/"
+ZLIB_DOMAIN = "https://zh.101fri.online/"
 LOGIN_DOMAIN = "https://z-library.sk/rpc.php"
 
 ZLIB_TOR_DOMAIN = (
