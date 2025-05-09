@@ -3,6 +3,8 @@ import os
 import time
 from datetime import datetime
 import random
+import multiprocessing
+from multiprocessing import Process
 
 import requests
 from openpyxl.styles.fills import fills
@@ -178,28 +180,29 @@ async def sem_fetch_one(sem, index, task):
         # return 1
         # 1 ok 2 fail
         try:
+            # result = await fetch_one(task)
+            # return result
             logger.info(f"task {index}/{batch_size} {task.book_name}")
-            result = await fetch_one(task)
-            return result
+            await asyncio.sleep(random.randint(1, 5))
+
+            return 1
         except Exception as e:
             logger.warning(f"Task failed: {e}")
             return None
 
 
-async def dispatch_task(concurrency=10):
-    page = 1
+async def process_tasks_for_page(page, concurrency=10):
     sem = asyncio.Semaphore(concurrency)
     proxy_index = 0
-  # 每批处理50条数据
     sleep_time = 10
 
     while dispatch_task_status:
         fetch_tasks = FetchTaskRepo.query(page, 1000, status=1)
-        logger.info(f"dispatch_task: page {page}, total tasks: {len(fetch_tasks)}")
+        logger.info(f"Process {os.getpid()} handling page {page}, total tasks: {len(fetch_tasks)}")
 
         if len(fetch_tasks) == 0:
             break
-        page += 1
+        page += multiprocessing.cpu_count()  # 增加进程数，避免重复处理
 
         # 分批处理任务
         for i in range(0, len(fetch_tasks), batch_size):
@@ -208,7 +211,6 @@ async def dispatch_task(concurrency=10):
                 break
 
             try:
-                # 添加超时控制，每批任务最多执行30秒
                 results = await asyncio.wait_for(
                     asyncio.gather(
                         *(sem_fetch_one(sem, index, batch_tasks[index]) for index in range(0, len(batch_tasks))),
@@ -225,25 +227,49 @@ async def dispatch_task(concurrency=10):
                 )
                 total_tasks = len(batch_tasks)
                 success_rate = (success_count / total_tasks) * 100
-                logger.info(f"批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
+                logger.info(f"Process {os.getpid()} - 批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
 
                 sleep_time = 60 if success_rate < 50 else 0
                 if success_rate < 50:
                     logger.warning(f"成功率低于50%，休眠 {sleep_time} 秒")
 
             except asyncio.TimeoutError:
-                logger.warning(f"Batch {i//batch_size + 1} timeout after 30 seconds")
-                success_rate = 0  # 超时视为全部失败
-                sleep_time = 30  # 强制休眠10秒
+                logger.warning(f"Process {os.getpid()} - Batch {i//batch_size + 1} timeout after 30 seconds")
+                success_rate = 0
+                sleep_time = 30
             except Exception as e:
-                logger.error(f"Error processing batch {i//batch_size + 1}: {str(e)}")
-                sleep_time = 10  # 强制休眠10秒
+                logger.error(f"Process {os.getpid()} - Error processing batch {i//batch_size + 1}: {str(e)}")
+                sleep_time = 10
             finally:
-            
                 proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)
-
-                # 每批处理完后暂停一下，避免对代理服务器造成过大压力
                 await asyncio.sleep(sleep_time)
+
+def run_process(page):
+    concurrency = int(os.getenv('WORKER_NUM'))
+    asyncio.run(process_tasks_for_page(page, concurrency))
+
+async def dispatch_task(num_processes=None):
+    if num_processes is None:
+        num_processes = multiprocessing.cpu_count()
+    
+    logger.info(f"Starting {num_processes} processes for task dispatch")
+    
+    processes = []
+    for i in range(num_processes):
+        p = Process(target=run_process, args=(i + 1,))
+        processes.append(p)
+        p.start()
+    
+    try:
+        for p in processes:
+            p.join()
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt, stopping all processes...")
+        stop_dispatch_task()
+        for p in processes:
+            p.terminate()
+        for p in processes:
+            p.join()
 
 def run_spider():
     asyncio.run(

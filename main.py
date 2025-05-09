@@ -62,7 +62,7 @@ async def run_spider_task():
     """爬虫任务"""
     while task_manager.running:
         try:
-            await dispatch_task(WORKER_NUM)
+            await dispatch_task()
             # await asyncio.sleep(3)  # 模拟爬虫工作
         except Exception as e:
             logger.error(f"爬虫任务出错: {e}")
