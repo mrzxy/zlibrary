@@ -72,7 +72,6 @@ async def run_spider_task():
 async def main():
     global task_manager
     try:
-        init_db()
         task_manager = TaskManager()
 
         # 注册信号处理
@@ -92,7 +91,7 @@ async def main():
         logger.info("Program interrupted by user")
         exit(0)
     finally:
-        close_db()
+        pass
 
 
 

@@ -173,21 +173,13 @@ batch_size = int(os.getenv('BATCH_SIZE'))
 async def sem_fetch_one(sem, index, task):
     async with sem:
         if not dispatch_task_status:
-            # logger.info("dispatch_task_status is False, stop dispatch_task")
             return
-        # await asyncio.sleep(random.randint(1, 5))
-        # print(f'fetch {task.book_name}')
-        # return 1
-        # 1 ok 2 fail
         try:
-            # result = await fetch_one(task)
-            # return result
-            logger.info(f"task {index}/{batch_size} {task.book_name}")
-            await asyncio.sleep(random.randint(1, 5))
-
-            return 1
+            logger.info(f"Process {os.getpid()} - task {index}/{batch_size} {task.book_name}")
+            result = await fetch_one(task)
+            return result
         except Exception as e:
-            logger.warning(f"Task failed: {e}")
+            logger.warning(f"Process {os.getpid()} - Task failed: {e}")
             return None
 
 

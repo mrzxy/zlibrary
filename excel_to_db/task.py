@@ -48,9 +48,9 @@ def run_bak():
 
 if __name__ == '__main__':
     try:
-        init_db()
+        db = init_db()
         run()
     except Exception as e:
         print(e)
     finally:
-        close_db()
+        close_db(db)
