@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from typing import List, Union
 from urllib.parse import quote
@@ -21,7 +22,7 @@ from typing import Optional
 import json
 
 
-ZLIB_DOMAIN = "https://zh.101fri.online/"
+ZLIB_DOMAIN = os.getenv("ZLIB_DOMAIN")
 LOGIN_DOMAIN = "https://z-library.sk/rpc.php"
 
 ZLIB_TOR_DOMAIN = (
