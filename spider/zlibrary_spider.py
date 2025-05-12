@@ -10,6 +10,7 @@ import requests
 from openpyxl.styles.fills import fills
 
 from database.config import PROXY_LIST, DIRECT
+from helper.fangtang import sc_send
 from helper.helper import size_to_bytes, find_largest_book, extract_domain
 from logger.logger import logger
 from models.models import FetchTask
@@ -215,20 +216,23 @@ async def process_tasks_for_page(page, concurrency=10):
 
                 success_count = sum(
                     1 for result in results
-                    if not isinstance(result, Exception) and result is not None
+                    if not isinstance(result, Exception) and result is not None and result == 1
                 )
                 total_tasks = len(batch_tasks)
                 success_rate = (success_count / total_tasks) * 100
                 logger.info(f"Process {os.getpid()} - 批次 {i // batch_size + 1} 成功率: {success_rate:.2f}%")
 
-                sleep_time = 60 if success_rate < 50 else 0
+                sleep_time = 10 if success_rate < 50 else 0
                 if success_rate < 50:
                     logger.warning(f"成功率低于50%，休眠 {sleep_time} 秒")
+
+                if success_count == 0:
+                    sc_send("抓取程序问题", "抓取程序问题，成功率0")
 
             except asyncio.TimeoutError:
                 logger.warning(f"Process {os.getpid()} - Batch {i//batch_size + 1} timeout after 30 seconds")
                 success_rate = 0
-                sleep_time = 30
+                sleep_time = 10
             except Exception as e:
                 logger.error(f"Process {os.getpid()} - Error processing batch {i//batch_size + 1}: {str(e)}")
                 sleep_time = 10
