@@ -70,5 +70,3 @@ def extract_format_and_size_by_default_download_btn(text):
         return book_format.lower(), f"{size_number} {size_unit}"
 
     return None, None
-
-"python  diaoyong", "你想怎么样")
