@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from database.config import init_db, close_db
@@ -64,6 +65,33 @@ def result_writer(result_queue, book_map, total):
             total.value += 1
 
 
+def load_books_from_file(json_file):
+    """从JSON文件加载book_id到字典
+    
+    Args:
+        json_file: JSON文件路径
+    Returns:
+        dict: book_id为key的字典
+    """
+    book_ids = {}
+    total = 0
+    
+    try:
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        for item in data:
+            book_id = item.get('book_id')
+            if book_id:
+                book_ids[book_id] = 1
+                total += 1
+                
+        print(f"从文件加载了 {total} 本图书")
+        return book_ids
+    except Exception as e:
+        print(f"加载JSON文件出错: {e}")
+        return {}
+
 def load_books(db):
     last_id = 0
     total = 0
@@ -125,7 +153,14 @@ if __name__ == '__main__':
         root_dir = "/Users/zxy/Downloads/ebook"
         with Manager() as manager:
             book_map = manager.dict()  # 创建可共享的字典
-            load_books(db)     # 加载图书数据
+            
+            # 从文件加载book_id
+            json_file = "/Users/zxy/Downloads/book.json"  # JSON文件路径
+            if os.path.exists(json_file):
+                book_map.update(load_books_from_file(json_file))
+            else:
+                load_books(db)     # 从数据库加载图书数据
+                
             main(root_dir, 4, book_map)  # 传递 book_map
     except Exception as e:
         print(e)
