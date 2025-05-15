@@ -49,3 +49,15 @@ class BookRepo:
         books = Book.select().offset(offset).limit(limit)
         return books
 
+    @staticmethod
+    def get_books_by_cursor(last_id=0, limit=10000):
+        """使用id作为游标查询图书ID
+        
+        Args:
+            last_id: 上次查询的最后一个id
+            limit: 每次获取的记录数
+        Returns:
+            list: (id, book_id) 元组列表
+        """
+        return Book.select(Book.id, Book.book_id).where(Book.id > last_id).limit(limit).tuples()
+

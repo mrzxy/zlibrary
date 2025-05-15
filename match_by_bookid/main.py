@@ -1,4 +1,3 @@
-
 import os
 import sys
 
@@ -66,21 +65,24 @@ def result_writer(result_queue, book_map, total):
 
 
 def load_books(db):
-    page = 1
-    limit = 5000
+    last_id = 0
+    total = 0
+    limit = 10000
 
     while True:
-        books = BookRepo.get_books_by_page(page=page, limit=limit)
+        books = BookRepo.get_books_by_cursor(last_id=last_id, limit=limit)
+        books = list(books)  # 执行查询
         if not books:
             break
-
+            
         for book in books:
-            book_map[book.book_id] = 1
-
-        page += 1
-        print(page)
-
-    print(f"总共加载了 {len(book_map)} 本图书")
+            book_map[book[1]] = 1
+            total += 1
+            
+        last_id = books[-1][0]  # 更新游标
+        print(f"已处理 {total} 条记录，当前ID: {last_id}")
+        
+    print(f"总共加载了 {total} 本图书")
 
 def main(root_dir, num_workers, book_map):
     with Manager() as manager:
