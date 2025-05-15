@@ -67,7 +67,7 @@ def result_writer(result_queue, book_map, total):
 
 def load_books(db):
     page = 1
-    limit = 2000
+    limit = 5000
 
     while True:
         books = BookRepo.get_books_by_page(page=page, limit=limit)
@@ -78,6 +78,7 @@ def load_books(db):
             book_map[book.book_id] = 1
 
         page += 1
+        print(page)
 
     print(f"总共加载了 {len(book_map)} 本图书")
 
