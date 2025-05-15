@@ -1,10 +1,9 @@
-from database.config import init_db, close_db
 
 import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import multiprocessing
+from database.config import init_db, close_db
 from multiprocessing import Manager, Process
 from os import scandir
 
