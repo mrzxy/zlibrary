@@ -1,6 +1,9 @@
+import os
 import time
 import re
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
+
 from playwright.sync_api import Page, Browser, BrowserContext
 
 from database.config import DOWNLOAD_DIR
@@ -12,9 +15,9 @@ import traceback
 
 from helper.playwrightx import new_browser, close_browser, wait_for_download
 
-
+zlib_domain = os.getenv('ZLIB_DOMAIN').strip("/")
 class DownloadManager:
-    def __init__(self, max_workers=4, interval=60):
+    def __init__(self, max_workers=1, interval=60):
         self.max_workers = max_workers
         self.interval = interval  # 定时拉取任务的间隔（秒）
         self.stop_flag = False
@@ -34,6 +37,8 @@ class DownloadManager:
 
         # 获取默认下载按钮
         default_btn = page.query_selector('.btn-default.addDownloadedBook')
+        if default_btn is None:
+            raise Exception(f"未找到下载按钮")
         default_text = default_btn.inner_text()
         default_ext, default_filesize = extract_format_and_size_by_default_download_btn(default_text)
 
@@ -73,13 +78,16 @@ class DownloadManager:
 
             # 创建新页面
             page = self.context.new_page()
-            print(f"开始下载: {book.book_name}")
-            page.goto(book.origin_url)
+            book.replace()
 
+            parsed = urlparse(book.origin_url)
+
+            detail_url = zlib_domain + parsed.path
+            page.goto(detail_url)
 
             download_info = self.find_download_btn(page)
-            download_url = 'https://z-library.sk' + download_info['href']
-            # download_url = 'http://localhost:8080/myfile'
+            download_url = zlib_domain + download_info['href']
+            print(f"开始下载: {book.book_name},{download_url}")
 
             new_page = self.context.new_page()
 
@@ -136,6 +144,7 @@ class DownloadManager:
         finally:
             if page:
                 page.close()
+            time.sleep(10)
 
     def is_daily_limit(self, page: Page):
         """检查是否达到每日下载限制"""

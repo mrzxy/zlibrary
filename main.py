@@ -45,7 +45,7 @@ def signal_handler(signum, frame):
 async def run_download_manager():
     """在协程中运行下载管理器"""
     try:
-        task_manager.download_manager = DownloadManager(max_workers=4, interval=5)
+        task_manager.download_manager = DownloadManager(max_workers=1, interval=5)
         # 使用 asyncio.to_thread 在单独的线程中运行阻塞操作
         await asyncio.to_thread(task_manager.download_manager.run)
     except Exception as e:
@@ -80,8 +80,8 @@ async def main():
 
         # 创建任务列表
         tasks = [
-            # run_download_manager(),
-            run_spider_task()
+            run_download_manager(),
+            # run_spider_task()
         ]
 
         # 并发运行所有任务

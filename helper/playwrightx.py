@@ -40,11 +40,16 @@ def interceptor_download(route):
 def new_browser():
     """创建新的浏览器实例"""
     playwright = sync_playwright().start()
-    
     # 使用系统中已安装的 Chrome 浏览器
     browser = playwright.chromium.launch(
         headless=False,  # 设置为 True 则为无头模式
         channel="chrome",  # 使用已安装的 Chrome 浏览器
+        proxy={
+            'server':"https://unlimit.residential.123proxy.cn:10363",
+            'username':"u1850013247942577",
+            'password':"M4htarAEeycI"
+        },
+
         args=[
             '--no-sandbox',
             '--disable-gpu',

@@ -11,7 +11,7 @@ class BaseModel(Model):
 
 class Book(BaseModel):
     id = AutoField()
-    book_id = CharField(max_length=32)
+    book_id = IntegerField()
     category = CharField(max_length=32)
     content_type = CharField(max_length=100, null=True)
     year = IntegerField(null=True)

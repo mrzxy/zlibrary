@@ -268,12 +268,29 @@ async def dispatch_task(num_processes=None):
             p.join()
 
 def run_spider():
-    asyncio.run(
-        fetch_one(
-            FetchTask(id=1, isbn="", book_name="比較憲法", type="book_name"),
-            0
-        )
-    )
+    # asyncio.run(
+    #     fetch_one(
+    #         FetchTask(id=1, isbn="", book_name="比較憲法", type="book_name"),
+    #         0
+    #     )
+    # )
+    BookRepo.insert_one({
+        'book_id': 1,  # 图书ID
+        'category': '政治',  # 分类
+        'year': 2019,  # 出版年份
+        'edition': '第1版',  # 版次
+        'publisher': '中央编译出版社',  # 出版社
+        'language': '中文',  # 语言
+        'pages': 100,  # 页数
+        'isbn_10': '9787532767011',  # ISBN-10
+        'isbn_13': '9787532767011',  # ISBN-13
+           'mix_isbn': '9787532767011',  # Mix ISBN
+        'content_type': 'epub',  # 内容类型
+        'file_size': '100M',  # 文件大小
+        'download_url': 'https://www.z-library.org/download/book/download/1/epub',  # 下载URL
+        'ipfs_cid': '',  # IPFS CID
+        'file_name': '周恩来传.epub',  # 文件名
+    })
 
 
 if __name__ == '__main__':
