@@ -3,6 +3,7 @@ import time
 import re
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
+import asyncio
 
 from playwright.sync_api import Page, Browser, BrowserContext
 
@@ -14,18 +15,18 @@ from repo.book_repo import BookRepo
 import traceback
 
 from helper.playwrightx import new_browser, close_browser, wait_for_download
+from proxy_manager import get_proxy, handle_proxy_rejected
 
 zlib_domain = os.getenv('ZLIB_DOMAIN').strip("/")
 class DownloadManager:
-    def __init__(self, max_workers=1, interval=60):
+    def __init__(self, max_workers=4, interval=5):
         self.max_workers = max_workers
-        self.interval = interval  # 定时拉取任务的间隔（秒）
-        self.stop_flag = False
-        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.interval = interval
+        self.running = True
         self.browser = None
         self.context = None
 
-    def find_download_btn(self, page: Page):
+    async def find_download_btn(self, page: Page):
         """查找并点击下载按钮"""
         # 等待并点击更多格式按钮
         # more_button = page.wait_for_selector('#btnCheckOtherFormats')
@@ -36,10 +37,10 @@ class DownloadManager:
         download_list = []
 
         # 获取默认下载按钮
-        default_btn = page.query_selector('.btn-default.addDownloadedBook')
+        default_btn = await page.query_selector('.btn-default.addDownloadedBook')
         if default_btn is None:
             raise Exception(f"未找到下载按钮")
-        default_text = default_btn.inner_text()
+        default_text = await default_btn.inner_text()
         default_ext, default_filesize = extract_format_and_size_by_default_download_btn(default_text)
 
         if default_ext is None or default_filesize is None:
@@ -48,7 +49,7 @@ class DownloadManager:
         download_list.append({
             'extension': default_ext,
             'filesizeString': default_filesize.strip(),
-            'href': default_btn.get_attribute('href')
+            'href': await default_btn.get_attribute('href')
         })
 
         # 暂时返回默认
@@ -69,27 +70,33 @@ class DownloadManager:
 
         return find_largest_book(download_list)
 
-    def download_book(self, book):
+    async def download_book(self, book):
+        """下载单本图书"""
+        browser = None
         page = None
         try:
-            # 启动浏览器
-            if not self.browser:
-                self.browser, self.context = new_browser()
+            # 获取代理
+            proxy = await get_proxy()
+            if not proxy:
+                logger.error("无法获取代理IP")
+                return False
+            # proxy = '60.188.79.105:20082'
 
+            # 使用代理创建浏览器
+            browser, context = await new_browser(proxy=proxy)
             # 创建新页面
-            page = self.context.new_page()
+            page = await context.new_page()
             book.replace()
 
             parsed = urlparse(book.origin_url)
-
             detail_url = zlib_domain + parsed.path
-            page.goto(detail_url)
+            await page.goto(detail_url, wait_until="domcontentloaded")
 
-            download_info = self.find_download_btn(page)
+            download_info = await self.find_download_btn(page)
             download_url = zlib_domain + download_info['href']
-            print(f"开始下载: {book.book_name},{download_url}")
+            logger.info(f"开始下载: {book.book_name}, {download_url}")
 
-            new_page = self.context.new_page()
+            new_page = await context.new_page()
 
             result = None
             final_url = None
@@ -108,43 +115,47 @@ class DownloadManager:
 
             new_page.on("response", capture_response)
 
-            def track_and_cancel_download(download):
-                # print(f"强制取消下载: {download.url}")
-                download.cancel()
+            async def track_and_cancel_download(download):
+                await download.cancel()
 
             new_page.on("download", track_and_cancel_download)
 
             try:
-                new_page.goto(download_url)
+                await new_page.goto(download_url)
             except Exception as e:
                 pass
 
             if result == "rejected":
-                logger.info(f"下载限流")
-                return None
+                logger.warning(f"下载被拒绝，切换代理重试")
+                handle_proxy_rejected()
+                return await self.download_book(book)  # 重试
 
             if result == "ok":
                 # 开始下载文件
-                logger.info(f"zhaodaoxia开始下载: {book.book_name}")
-                saved_files = download_single(final_url)
-                if saved_files != "":
+                logger.info(f"开始下载文件: {book.book_name}")
+                saved_files =  download_single(final_url)
+                if saved_files:
                     book.content_type = download_info['extension']
                     book.file_size = download_info['filesizeString']
                     book.local_file = saved_files
                     BookRepo.download_completed(book)
+                    return True
             else:
-                logger.info(f"未知情况 {book.id}")
-
-            return None
+                logger.warning(f"未知情况 {book.id}")
+                await asyncio.sleep(10000)
+                return False
 
         except Exception as e:
-            print(f"下载失败: {book.book_name}, 错误: {e}")
             traceback.print_exc()
-            return None
+            logger.error(f"下载过程出错: {e}")
+            if str(e) == 'rejected':
+                logger.warning(f"代理 {proxy} 被拒绝，切换到下一个代理")
+                handle_proxy_rejected()
+            return False
         finally:
             if page:
-                page.close()
-            time.sleep(10)
+                await page.close()
+            await browser.close()
 
     def is_daily_limit(self, page: Page):
         """检查是否达到每日下载限制"""
@@ -159,20 +170,20 @@ class DownloadManager:
 
     def stop(self):
         """停止下载管理器"""
-        self.stop_flag = True
+        self.running = False
         if self.browser:
             close_browser(self.browser)
             self.browser = None
             self.context = None
 
-    def run(self):
+    async def run(self):
         """运行下载管理器"""
-        while not self.stop_flag:
+        while self.running:
             try:
                 books = BookRepo.get_to_download_books()
                 for book in books:
-                    self.executor.submit(self.download_book, book)
+                    await self.download_book(book)
+                    await asyncio.sleep(self.interval)  # 每次下载后等待一段时间
             except Exception as e:
                 logger.error(f"下载管理器出错: {e}")
-            finally:
-                time.sleep(self.interval)
+                await asyncio.sleep(5)  # 出错后等待一段时间再继续

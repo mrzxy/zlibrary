@@ -49,19 +49,20 @@ book_map = {}
 
 def result_writer(result_queue, book_map, total):
     while True:
-        filename = result_queue.get()
-        if filename is None:  # 接收到毒丸，结束进程
+        filepath = result_queue.get()
+        if filepath is None:  # 接收到毒丸，结束进程
             break
-        full_filename = os.path.basename(filename)
+        full_filename = os.path.basename(filepath)
 
         # 获取文件名（不带扩展名）和扩展名
         filename, file_extension = os.path.splitext(full_filename)
         
         if file_extension != "":
             continue
-        
+
         # 检查文件名是否在 book_map 中
         if filename.isdigit() and int(filename) in book_map:
+            print(filepath)
             total.value += 1
 
 

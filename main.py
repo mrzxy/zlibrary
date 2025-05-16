@@ -46,8 +46,7 @@ async def run_download_manager():
     """在协程中运行下载管理器"""
     try:
         task_manager.download_manager = DownloadManager(max_workers=1, interval=5)
-        # 使用 asyncio.to_thread 在单独的线程中运行阻塞操作
-        await asyncio.to_thread(task_manager.download_manager.run)
+        await task_manager.download_manager.run()
     except Exception as e:
         logger.error(f"下载管理器出错: {e}")
     finally:
