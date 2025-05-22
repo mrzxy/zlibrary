@@ -47,7 +47,7 @@ total = 0
 
 book_map = {}
 
-def result_writer(result_queue, book_map, total):
+def result_writer(result_queue, book_map, total, processed_ids):
     while True:
         filepath = result_queue.get()
         if filepath is None:  # 接收到毒丸，结束进程
@@ -62,8 +62,20 @@ def result_writer(result_queue, book_map, total):
 
         # 检查文件名是否在 book_map 中
         if filename.isdigit() and int(filename) in book_map:
-            print(filepath)
-            total.value += 1
+            book_id = int(filename)
+            if book_id not in processed_ids:
+                print(filepath)
+                total.value += 1
+                processed_ids.add(book_id)
+        # 处理特定格式的文件名
+        elif filename.startswith("aacid__zlib3_files__") and "__" in filename:
+            parts = filename.split("__")
+            if len(parts) >= 4:
+                book_id = int(parts[3])
+                if book_id in book_map and book_id not in processed_ids:
+                    print(filepath)
+                    total.value += 1
+                    processed_ids.add(book_id)
 
 
 def load_books_from_file(json_file):
@@ -113,18 +125,20 @@ def load_books(db):
         
     print(f"总共加载了 {total} 本图书")
 
-def main(root_dir, num_workers, book_map):
+def main(root_dirs, num_workers, book_map):
     with Manager() as manager:
         task_queue = manager.Queue()
         result_queue = manager.Queue()
         counter = manager.Value('i', 0)
         lock = manager.Lock()
         total = manager.Value('i', 0)  # 创建共享计数器
+        processed_ids = manager.list()  # 创建共享列表用于去重
 
         # 初始化任务队列和计数器
-        task_queue.put(root_dir)
-        with lock:
-            counter.value = 1
+        for root_dir in root_dirs:
+            task_queue.put(root_dir)
+            with lock:
+                counter.value += 1
 
         # 创建工作进程池
         workers = []
@@ -134,7 +148,7 @@ def main(root_dir, num_workers, book_map):
             workers.append(p)
 
         # 创建结果写入进程
-        result_p = Process(target=result_writer, args=(result_queue, book_map, total))
+        result_p = Process(target=result_writer, args=(result_queue, book_map, total, processed_ids))
         result_p.start()
 
         # 等待所有工作进程结束
@@ -151,7 +165,15 @@ def main(root_dir, num_workers, book_map):
 if __name__ == '__main__':
     try:
         db = init_db()
-        root_dir = "/Users/zxy/Downloads/ebook"
+        # 设置多个 root_dir
+        root_dirs = [
+            "/Users/zxy/Downloads/ebook",
+            "/Users/zxy/Downloads/ebook2",
+            "/vol3/1000/电子书\ 存储 盘 4-zlib last"
+            "/vol3/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp",
+            "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
+            
+        ]
         with Manager() as manager:
             book_map = manager.dict()  # 创建可共享的字典
             
@@ -162,7 +184,7 @@ if __name__ == '__main__':
             else:
                 load_books(db)     # 从数据库加载图书数据
                 
-            main(root_dir, 4, book_map)  # 传递 book_map
+            main(root_dirs, 4, book_map)  # 传递多个 root_dir
     except Exception as e:
         print(e)
     finally:
