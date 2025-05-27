@@ -139,7 +139,9 @@ async def fetch_one(task, proxy_index=-1):
 
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
+        print(info)
         detail = await info.fetch()
+        # print(detail)
 
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         # with open(f"detail.json", "w", encoding="utf-8") as f:
@@ -161,21 +163,23 @@ async def fetch_one(task, proxy_index=-1):
 
         book = BookRepo.insert_one({
             'book_id': info.get('id'),  # 图书ID
-            'category': detail.get('categories', ''),  # 分类
+            'category': "",
             'year': info.get('year'),  # 出版年份
-            'edition': detail.get('edition'),  # 版次
-            'publisher': detail.get('publisher'),  # 出版社
+            # 'edition': detail.get('edition'),  # 版次
+            'edition': '',  # 版次
+            'publisher': info.get('publisher'),  # 出版社
             'language': info.get('language'),  # 语言
-            'pages': detail.get('pages', 0),  # 页数
-            'isbn_10': detail.get("ISBN 10"),  # ISBN-10
-            'isbn_13': detail.get("ISBN 13"),  # ISBN-13
-            'mix_isbn': detail.get("ISBN, ASIN, ISSN", ''),  # Mix ISBN
+            # 'pages': detail.get('pages', 0),  # 页数
+            # 'isbn_10': detail.get("ISBN 10"),  # ISBN-10
+            # 'isbn_13': detail.get("ISBN 13"),  # ISBN-13
+            # 'mix_isbn': detail.get("ISBN, ASIN, ISSN", ''),  # Mix ISBN
+            "isbn_13": info.get('isbn'),
             'content_type': '',  # 内容类型
             'file_size': '',  # 文件大小
             'download_url': '',  # 下载URL
-            'ipfs_cid': detail.get('ipfs'),  # IPFS CID
+            # 'ipfs_cid': detail.get('ipfs'),  # IPFS CID
             'file_name': '',  # 文件名
-            'origin_url': detail.get('url'),  # 原始URL
+            'origin_url': info.get('url'),  # 原始URL
             'book_name': info.get('name'),  # 书名
             'author': ",".join(info.get('authors', [])),  # 作者
             'status': 1,  # 状态
