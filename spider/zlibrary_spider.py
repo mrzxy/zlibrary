@@ -24,11 +24,13 @@ import logging
 
 dispatch_task_status = True
 
+
 # 代理列表
 
 def stop_dispatch_task():
     global dispatch_task_status
     dispatch_task_status = False
+
 
 async def NewZlibrarySpider(proxy_index=0):
     if DIRECT == 1:
@@ -50,7 +52,6 @@ class ZlibrarySpider:
             logger.info("No proxy used")
         self.lib = zlibrary.AsyncZlib(proxy_list=cur_proxy)
 
-
     async def login(self):
         email = "xuyong.mr@gmail.com"
         password = "123123aa"
@@ -58,7 +59,7 @@ class ZlibrarySpider:
 
     async def search(self, task):
         q = task.isbn if task.type == "isbn" else task.book_name
-        paginator = await self.lib.search(q, exact=True,extensions=[Extension.PDF, Extension.EPUB])
+        paginator = await self.lib.search(q, exact=True, extensions=[Extension.PDF, Extension.EPUB])
         book_set = await paginator.next()
         match_set = []
         for book in book_set:
@@ -69,13 +70,16 @@ class ZlibrarySpider:
             if Extension(ext) not in [Extension.PDF, Extension.EPUB, Extension.AZW3, Extension.MOBI]:
                 continue
 
-            if book['name'] == task.book_name:
+            left = book['name'].lower()
+            right = task.book_name.lower()
+
+            if left == right:
                 match_set.append(book)
                 continue
 
             if book["isbn"] == task.isbn:
-                text1 = task.book_name
-                text2 = book['name']
+                text1 = left
+                text2 = right
                 distance = Levenshtein.distance(text1, text2)
                 max_len = max(len(text1), len(text2))
                 similarity = 1 - (distance / max_len)  # 归一化相似度
@@ -178,16 +182,18 @@ async def fetch_one(task, proxy_index=-1):
         })
         if book is not None:
             FetchTaskRepo.update_status_by_id(task.id, 2)
-
-
         return 1
 
     except Exception as e:
         logger.error(f"Error fetching book: {str(e)}")
         return 0
 
+
 batch_size = int(os.getenv('BATCH_SIZE'))
+
+
 async def sem_fetch_one(sem, index, task):
+    print(index, task)
     async with sem:
         if not dispatch_task_status:
             return
@@ -246,19 +252,21 @@ async def process_tasks_for_page(page, concurrency=10):
                     sc_send("抓取程序问题", "抓取程序问题，成功率0")
 
             except asyncio.TimeoutError:
-                logger.warning(f"Process {os.getpid()} - Batch {i//batch_size + 1} timeout after 30 seconds")
+                logger.warning(f"Process {os.getpid()} - Batch {i // batch_size + 1} timeout after 30 seconds")
                 success_rate = 0
                 sleep_time = 10
             except Exception as e:
-                logger.error(f"Process {os.getpid()} - Error processing batch {i//batch_size + 1}: {str(e)}")
+                logger.error(f"Process {os.getpid()} - Error processing batch {i // batch_size + 1}: {str(e)}")
                 sleep_time = 10
             finally:
                 proxy_index = (proxy_index + len(batch_tasks)) % len(PROXY_LIST)
                 await asyncio.sleep(sleep_time)
 
+
 def run_process(page):
     concurrency = int(os.getenv('WORKER_NUM'))
     asyncio.run(process_tasks_for_page(page, concurrency))
+
 
 async def dispatch_task(num_processes=None):
     if num_processes is None:
@@ -283,14 +291,16 @@ async def dispatch_task(num_processes=None):
         for p in processes:
             p.join()
 
+
 def run_spider():
     asyncio.run(
         fetch_one(
-            FetchTask(id=1, isbn="9781138885288", book_name="Soviet nation-building in Central Asia : the making of the Kazakh and Uzbek nations", type="book_name"),
+            FetchTask(id=1, isbn="9781138885288",
+                      book_name="Soviet nation-building in Central Asia : the making of the Kazakh and Uzbek nations",
+                      type="book_name"),
             0
         )
     )
-
 
 
 if __name__ == '__main__':
@@ -300,4 +310,3 @@ if __name__ == '__main__':
             -1
         )
     )
-
