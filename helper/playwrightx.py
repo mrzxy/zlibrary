@@ -72,7 +72,7 @@ async def new_browser(proxy=None):
 
     # 启动浏览器
     browser = await playwright.chromium.launch(
-        headless=True,  # 设置为 True 则为无头模式
+        headless=False,  # 设置为 True 则为无头模式
         channel="chrome",  # 使用已安装的 Chrome 浏览器
         downloads_path=DOWNLOAD_DIR,  # 设置下载目录
         args=[

@@ -8,13 +8,15 @@ from models.models import FetchTask
 from database.config import init_db, close_db
 
 def run():
-    df = pd.read_csv("/vol3/1000/电子书原始清单/chi_part2_过滤-更新.csv")
+    df = pd.read_csv("/Users/zxy/Downloads/0527-v1.csv")
 
     data_list = []
     for row in df.itertuples():
+        isbn = str(row.isbn).replace(",", "")[0:13]
         data_list.append({
             'type': "book_name",
             'book_name': row.title,
+            "isbn": isbn
         })
     if len(data_list) > 0:
         print("开始批量插入数据...")

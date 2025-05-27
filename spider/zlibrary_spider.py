@@ -6,6 +6,7 @@ import random
 import multiprocessing
 from multiprocessing import Process
 
+import Levenshtein
 import requests
 from openpyxl.styles.fills import fills
 
@@ -63,8 +64,22 @@ class ZlibrarySpider:
         for book in book_set:
             # if book['isbn'] != task.isbn:
             #     continue
+            ext = book['extension'].upper() if book['extension'] else None
+
+            if Extension(ext) not in [Extension.PDF, Extension.EPUB, Extension.AZW3, Extension.MOBI]:
+                continue
+
             if book['name'] == task.book_name:
                 match_set.append(book)
+
+            if book["isbn"] == task.isbn:
+                text1 = task.book_name
+                text2 = book['name']
+                distance = Levenshtein.distance(text1, text2)
+                max_len = max(len(text1), len(text2))
+                similarity = 1 - (distance / max_len)  # 归一化相似度
+                if similarity >= 0.9 - 1e-9:
+                    match_set.append(book)
             # TODO
             # match_set.append(book)
             # break
@@ -110,6 +125,8 @@ async def fetch_one(task, proxy_index=-1):
             return 1
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
+        print(info)
+        exit(1)
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
         #     logger.warning(f"获取{info.get('id')}的格式失败")
@@ -247,15 +264,15 @@ def run_process(page):
 async def dispatch_task(num_processes=None):
     if num_processes is None:
         num_processes = multiprocessing.cpu_count()
-    
+
     logger.info(f"Starting {num_processes} processes for task dispatch")
-    
+
     processes = []
     for i in range(num_processes):
         p = Process(target=run_process, args=(i + 1,))
         processes.append(p)
         p.start()
-    
+
     try:
         for p in processes:
             p.join()
@@ -268,12 +285,12 @@ async def dispatch_task(num_processes=None):
             p.join()
 
 def run_spider():
-    # asyncio.run(
-    #     fetch_one(
-    #         FetchTask(id=1, isbn="", book_name="比較憲法", type="book_name"),
-    #         0
-    #     )
-    # )
+    asyncio.run(
+        fetch_one(
+            FetchTask(id=1, isbn="9781138885288", book_name="Soviet nation-building in Central Asia : the making of the Kazakh and Uzbek nations", type="book_name"),
+            0
+        )
+    )
 
 
 

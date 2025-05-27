@@ -66,7 +66,7 @@ def result_writer(result_queue, book_map, total, processed_ids):
             if book_id not in processed_ids:
                 print(filepath)
                 total.value += 1
-                processed_ids.add(book_id)
+                processed_ids[book_id] = 1  # 使用 dict 模拟 set
         # 处理特定格式的文件名
         elif filename.startswith("aacid__zlib3_files__") and "__" in filename:
             parts = filename.split("__")
@@ -75,7 +75,7 @@ def result_writer(result_queue, book_map, total, processed_ids):
                 if book_id in book_map and book_id not in processed_ids:
                     print(filepath)
                     total.value += 1
-                    processed_ids.add(book_id)
+                    processed_ids[book_id] = 1  # 使用 dict 模拟 set
 
 
 def load_books_from_file(json_file):
@@ -132,7 +132,7 @@ def main(root_dirs, num_workers, book_map):
         counter = manager.Value('i', 0)
         lock = manager.Lock()
         total = manager.Value('i', 0)  # 创建共享计数器
-        processed_ids = manager.list()  # 创建共享列表用于去重
+        processed_ids = manager.dict()  # 使用 dict 模拟 set 用于去重
 
         # 初始化任务队列和计数器
         for root_dir in root_dirs:
@@ -169,9 +169,9 @@ if __name__ == '__main__':
         root_dirs = [
             "/Users/zxy/Downloads/ebook",
             "/Users/zxy/Downloads/ebook2",
-            "/vol3/1000/电子书\ 存储 盘 4-zlib last"
-            "/vol3/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp",
-            "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
+            # "/vol3/1000/电子书\ 存储 盘 4-zlib last"
+            # "/vol3/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp",
+            # "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
             
         ]
         with Manager() as manager:

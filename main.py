@@ -79,8 +79,8 @@ async def main():
 
         # 创建任务列表
         tasks = [
-            run_download_manager(),
-            # run_spider_task()
+            # run_download_manager(),
+            run_spider_task()
         ]
 
         # 并发运行所有任务
