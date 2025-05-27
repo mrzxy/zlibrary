@@ -59,7 +59,7 @@ class ZlibrarySpider:
 
     async def search(self, task):
         q = task.isbn if task.type == "isbn" else task.book_name
-        paginator = await self.lib.search(q, exact=True, extensions=[Extension.PDF, Extension.EPUB])
+        paginator = await self.lib.search(q, exact=True, extensions=[Extension.PDF, Extension.EPUB, Extension.AZW3, Extension.MOBI])
         book_set = await paginator.next()
         match_set = []
         for book in book_set:
