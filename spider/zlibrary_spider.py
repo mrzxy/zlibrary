@@ -71,6 +71,7 @@ class ZlibrarySpider:
 
             if book['name'] == task.book_name:
                 match_set.append(book)
+                continue
 
             if book["isbn"] == task.isbn:
                 text1 = task.book_name
