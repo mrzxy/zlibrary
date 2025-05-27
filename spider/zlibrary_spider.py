@@ -139,8 +139,8 @@ async def fetch_one(task, proxy_index=-1):
 
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
-        print(info)
-        detail = await info.fetch()
+        # print(info)
+        # detail = await info.fetch()
         # print(detail)
 
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
