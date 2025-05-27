@@ -128,7 +128,6 @@ async def fetch_one(task, proxy_index=-1):
             logger.warning(f"根据{task.book_name} 没有找到匹配的书籍")
             FetchTaskRepo.update_status_by_id(task.id, 4)
             return 1
-        logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
@@ -141,6 +140,8 @@ async def fetch_one(task, proxy_index=-1):
         # open(f"info.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(info, ensure_ascii=False))
         detail = await info.fetch()
+
+        logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         # with open(f"detail.json", "w", encoding="utf-8") as f:
         #     f.write(json.dumps(detail, ensure_ascii=False))
 
@@ -182,7 +183,10 @@ async def fetch_one(task, proxy_index=-1):
         })
         if book is not None:
             FetchTaskRepo.update_status_by_id(task.id, 2)
-        return 1
+            return 1
+        else:
+            logger.warning(f"插入书籍失败")
+        return 0
 
     except Exception as e:
         logger.error(f"Error fetching book: {str(e)}")

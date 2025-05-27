@@ -48,6 +48,9 @@ if __name__ == '__main__':
     try:
         db = init_db()
         run()
+
+        # print(fetch_tasks)
+
     except Exception as e:
         print(e)
     finally:
