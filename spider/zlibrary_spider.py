@@ -125,8 +125,6 @@ async def fetch_one(task, proxy_index=-1):
             return 1
         logger.info(f"根据{task.book_name} 搜到 {fetch_records[0].get('name')}")
         info = fetch_records[0]
-        print(info)
-        exit(1)
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
         #     logger.warning(f"获取{info.get('id')}的格式失败")
