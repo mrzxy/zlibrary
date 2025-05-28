@@ -13,6 +13,10 @@ class BookRepo:
         return book.save()
 
     @staticmethod
+    def local_match_completed(local_file, book_id):
+        return Book.update(local_file=local_file, status=20).where(Book.book_id == book_id).execute()
+
+    @staticmethod
     def insert_one(book_data):
         """插入单条图书数据
         

@@ -47,6 +47,9 @@ total = 0
 
 book_map = {}
 
+def match_ok(local_file, book_id):
+    BookRepo.local_match_completed(local_file, book_id)
+
 def result_writer(result_queue, book_map, total, processed_ids):
     while True:
         filepath = result_queue.get()
@@ -56,9 +59,10 @@ def result_writer(result_queue, book_map, total, processed_ids):
 
         # 获取文件名（不带扩展名）和扩展名
         filename, file_extension = os.path.splitext(full_filename)
-        
-        if file_extension != "":
-            continue
+        print(filename, file_extension)
+
+        # if file_extension != "":
+        #     continue
 
         # 检查文件名是否在 book_map 中
         if filename.isdigit() and int(filename) in book_map:
@@ -67,6 +71,7 @@ def result_writer(result_queue, book_map, total, processed_ids):
                 print(filepath)
                 total.value += 1
                 processed_ids[book_id] = 1  # 使用 dict 模拟 set
+                match_ok(filepath, book_id)
         # 处理特定格式的文件名
         elif filename.startswith("aacid__zlib3_files__") and "__" in filename:
             parts = filename.split("__")
@@ -76,6 +81,7 @@ def result_writer(result_queue, book_map, total, processed_ids):
                     print(filepath)
                     total.value += 1
                     processed_ids[book_id] = 1  # 使用 dict 模拟 set
+                    match_ok(filepath, book_id)
 
 
 def load_books_from_file(json_file):
@@ -88,22 +94,23 @@ def load_books_from_file(json_file):
     """
     book_ids = {}
     total = 0
-    
+
     try:
         with open(json_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            
+
         for item in data:
             book_id = item.get('book_id')
             if book_id:
                 book_ids[book_id] = 1
                 total += 1
-                
+
         print(f"从文件加载了 {total} 本图书")
         return book_ids
     except Exception as e:
         print(f"加载JSON文件出错: {e}")
         return {}
+
 
 def load_books(db):
     last_id = 0
@@ -115,15 +122,16 @@ def load_books(db):
         books = list(books)  # 执行查询
         if not books:
             break
-            
+
         for book in books:
             book_map[book[1]] = 1
             total += 1
-            
+
         last_id = books[-1][0]  # 更新游标
         print(f"已处理 {total} 条记录，当前ID: {last_id}")
-        
+
     print(f"总共加载了 {total} 本图书")
+
 
 def main(root_dirs, num_workers, book_map):
     with Manager() as manager:
@@ -158,32 +166,35 @@ def main(root_dirs, num_workers, book_map):
         # 终止结果写入进程
         result_queue.put(None)
         result_p.join()
-        
+
         print(f"共找到 {total.value} 个匹配的图书")
 
 
 if __name__ == '__main__':
+    argv = sys.argv
     try:
         db = init_db()
         # 设置多个 root_dir
         root_dirs = [
-            "/Users/zxy/Downloads/ebook",
-            "/Users/zxy/Downloads/ebook2",
-            # "/vol3/1000/电子书\ 存储 盘 4-zlib last"
-            # "/vol3/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp",
-            # "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
-            
+            "/vol2/1000/电子书 存储 盘 4-zlib last",
+            "/vol2/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp"
+            "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
         ]
+
+        if len(argv) > 1 and argv[1] == "debug":
+            root_dirs = [
+                "/Users/zxy/Downloads/ebook",
+            ]
         with Manager() as manager:
             book_map = manager.dict()  # 创建可共享的字典
-            
+
             # 从文件加载book_id
             json_file = "/Users/zxy/Downloads/book.json"  # JSON文件路径
             if os.path.exists(json_file):
                 book_map.update(load_books_from_file(json_file))
             else:
-                load_books(db)     # 从数据库加载图书数据
-                
+                load_books(db)  # 从数据库加载图书数据
+
             main(root_dirs, 4, book_map)  # 传递多个 root_dir
     except Exception as e:
         print(e)

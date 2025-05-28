@@ -34,6 +34,7 @@ class Book(BaseModel):
     created_at = DateTimeField(default=None)
     updated_at = DateTimeField(default=None)
     status = IntegerField(null=True)
+    is_match = IntegerField(null=True)
 
 class FetchTask(BaseModel):
     id = AutoField()
