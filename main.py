@@ -1,5 +1,7 @@
 import asyncio
 import signal
+import sys
+
 import pymysql
 
 from models.models import FetchTask
@@ -77,11 +79,14 @@ async def main():
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        # 创建任务列表
         tasks = [
-            # run_download_manager(),
             run_spider_task()
         ]
+        argv = sys.argv
+        if len(argv) > 1 and argv[1] == "down":
+            tasks = [
+                run_download_manager(),
+            ]
 
         # 并发运行所有任务
         await asyncio.gather(*tasks)

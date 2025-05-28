@@ -59,7 +59,6 @@ def result_writer(result_queue, book_map, total, processed_ids):
 
         # 获取文件名（不带扩展名）和扩展名
         filename, file_extension = os.path.splitext(full_filename)
-        print(filename, file_extension)
 
         # if file_extension != "":
         #     continue
@@ -177,19 +176,21 @@ if __name__ == '__main__':
         # 设置多个 root_dir
         root_dirs = [
             "/vol2/1000/电子书 存储 盘 4-zlib last",
-            "/vol2/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp"
+            "/vol2/1000/电子书 存储 盘1/电子书-zlib-temp/电子书-temp-zp",
             "/vol00/MG08ACA16TE_00MX141_00MX141LEN_1/电子书 存储 盘 2"
         ]
+
+        json_file = "/home/RebekahPP/zlibrary/bookid.json"
 
         if len(argv) > 1 and argv[1] == "debug":
             root_dirs = [
                 "/Users/zxy/Downloads/ebook",
             ]
+            json_file = "/Users/zxy/Downloads/book.json"  # JSON文件路径
         with Manager() as manager:
             book_map = manager.dict()  # 创建可共享的字典
 
             # 从文件加载book_id
-            json_file = "/Users/zxy/Downloads/book.json"  # JSON文件路径
             if os.path.exists(json_file):
                 book_map.update(load_books_from_file(json_file))
             else:
