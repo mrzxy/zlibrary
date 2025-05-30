@@ -34,7 +34,6 @@ class Book(BaseModel):
     created_at = DateTimeField(default=None)
     updated_at = DateTimeField(default=None)
     status = IntegerField(null=True)
-    is_match = IntegerField(null=True)
 
 class FetchTask(BaseModel):
     id = AutoField()
@@ -46,3 +45,13 @@ class FetchTask(BaseModel):
     type = SmallIntegerField(default=1)
     class Meta:
         table_name = 'fetch_task'
+
+class BookDownUrl(BaseModel):
+    id = AutoField()
+    book_id = IntegerField()
+    url = TextField(null=True)
+    status = SmallIntegerField(default=1)
+    created_at = DateTimeField(default=None)
+    updated_at = DateTimeField(default=None)
+    class Meta:
+        table_name = 'book_down_url'

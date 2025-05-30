@@ -4,7 +4,7 @@ import sys
 
 import pymysql
 
-from models.models import FetchTask
+from models.models import FetchTask, Book
 from repo.fetch_task_repo import FetchTaskRepo
 
 pymysql.install_as_MySQLdb()
@@ -12,13 +12,13 @@ from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
 
 from database.config import init_db, close_db, WORKER_NUM
-from download_manager import DownloadManager
+from download_manager import DownloadManager, dm_test
 from concurrent.futures import ThreadPoolExecutor
 
 from helper.playwrightx import new_browser
 from logger.logger import logger
 from repo.book_repo import BookRepo
-from spider.zlibrary_spider import dispatch_task, stop_dispatch_task, run_spider
+from spider.zlibrary_spider import dispatch_task, stop_dispatch_task, run_spider, ZlibrarySpider
 
 
 class TaskManager:
@@ -79,13 +79,14 @@ async def main():
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        tasks = [
-            run_spider_task()
-        ]
         argv = sys.argv
         if len(argv) > 1 and argv[1] == "down":
             tasks = [
                 run_download_manager(),
+            ]
+        else:
+            tasks = [
+                run_spider_task()
             ]
 
         # 并发运行所有任务
@@ -98,16 +99,14 @@ async def main():
         pass
 
 
-
-
-
 if __name__ == "__main__":
-    # download_manager = DownloadManager(max_workers=4, interval=5)
+    # dm = DownloadManager(max_workers=4, interval=5)
     # 使用 asyncio.to_thread 在单独的线程中运行阻塞操作
     # book = BookRepo.get_by_id(1)
     # FetchTaskRepo.update_status_by_id(4814, 3)
     # print(book)
-    # download_manager.download_book(book)
+    # asyncio.run(
+        # dm_test()
+    # )
     # run_spider()
     asyncio.run(main())
-

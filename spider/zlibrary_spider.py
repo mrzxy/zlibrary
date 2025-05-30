@@ -52,14 +52,24 @@ class ZlibrarySpider:
             logger.info("No proxy used")
         self.lib = zlibrary.AsyncZlib(proxy_list=cur_proxy)
 
+    async def is_use_up(self):
+        limits = await self.lib.profile.get_limits()
+        if 'daily_amount' in limits:
+            return limits['daily_amount'] >= limits['daily_allowed']
+        return None
+
+    def get_lib(self):
+        return self.lib
+
     async def login(self):
-        email = "xuyong.mr@gmail.com"
-        password = "123123aa"
+        email = "rebekahdsh@gmail.com"
+        password = "linlin00oop"
         await self.lib.login(email, password)
 
     async def search(self, task):
         q = task.isbn if task.type == "isbn" else task.book_name
-        paginator = await self.lib.search(q, exact=True, extensions=[Extension.PDF, Extension.EPUB, Extension.AZW3, Extension.MOBI])
+        paginator = await self.lib.search(q, exact=True,
+                                          extensions=[Extension.PDF, Extension.EPUB, Extension.AZW3, Extension.MOBI])
         book_set = await paginator.next()
         match_set = []
         for book in book_set:
@@ -165,19 +175,19 @@ async def fetch_one(task, proxy_index=-1):
             'book_id': info.get('id'),  # 图书ID
             'category': "",
             'year': info.get('year'),  # 出版年份
-            # 'edition': detail.get('edition'),  # 版次
             'edition': '',  # 版次
             'publisher': info.get('publisher'),  # 出版社
             'language': info.get('language'),  # 语言
+            # 'edition': detail.get('edition'),  # 版次
             # 'pages': detail.get('pages', 0),  # 页数
             # 'isbn_10': detail.get("ISBN 10"),  # ISBN-10
             # 'isbn_13': detail.get("ISBN 13"),  # ISBN-13
             # 'mix_isbn': detail.get("ISBN, ASIN, ISSN", ''),  # Mix ISBN
+            # 'ipfs_cid': detail.get('ipfs'),  # IPFS CID
             "isbn_13": info.get('isbn'),
             'content_type': '',  # 内容类型
             'file_size': '',  # 文件大小
             'download_url': '',  # 下载URL
-            # 'ipfs_cid': detail.get('ipfs'),  # IPFS CID
             'file_name': '',  # 文件名
             'origin_url': info.get('url'),  # 原始URL
             'book_name': info.get('name'),  # 书名
@@ -300,21 +310,21 @@ async def dispatch_task(num_processes=None):
             p.join()
 
 
-def run_spider():
-    asyncio.run(
-        fetch_one(
-            FetchTask(id=1, isbn="9781138885288",
-                      book_name="Soviet nation-building in Central Asia : the making of the Kazakh and Uzbek nations",
-                      type="book_name"),
-            0
-        )
-    )
+async def run_spider():
+    # asyncio.run(
+    #     fetch_one(
+    #         FetchTask(id=1, isbn="9781138885288",
+    #                   book_name="Soviet nation-building in Central Asia : the making of the Kazakh and Uzbek nations",
+    #                   type="book_name"),
+    #         0
+    #     )
+    # )
+    await dosomething()
 
 
-if __name__ == '__main__':
-    asyncio.run(
-        fetch_one(
-            FetchTask(id=1, isbn="", book_name="周恩来传", type="book_name"),
-            -1
-        )
-    )
+async def dosomething():
+    spider = ZlibrarySpider(-1)
+    await spider.login()
+    limits =  await spider.get_limits()
+    print(limits)
+

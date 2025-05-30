@@ -33,35 +33,37 @@ async def fetch_with_retry(url, proxy_list=None, cookies=None, max_retries=3, ti
     retries = 0
     while retries < max_retries:
         if retries > 0:
-            pass
-            # logger.info(f"Retrying {url}")
+            logger.info(f"Retrying {url} (attempt {retries + 1}/{max_retries})")
         try:
             async with aiohttp.ClientSession(
                 headers=HEAD,
                 cookie_jar=aiohttp.CookieJar(unsafe=True),
                 cookies=cookies,
-                timeout=TIMEOUT,  # 注意这里使用 ClientTimeout 类
+                timeout=TIMEOUT,
                 connector=ChainProxyConnector.from_urls(proxy_list) if proxy_list else None,
             ) as sess:
                 logger.info("GET %s" % url)
                 async with sess.get(url) as resp:
                     if resp.status == 200:
-                        return await resp.text()
+                        text = await resp.text()
+                        if not text:
+                            raise Exception("Empty response from server")
+                        return text
                     if 500 <= resp.status < 600:
                         raise aiohttp.ClientResponseError(
                             status=resp.status,
                             message=f"Server error: {resp.status}"
                         )
                     resp.raise_for_status()
-        # 修正异常捕获：用 asyncio.TimeoutError 替代 ClientTimeoutError
         except (aiohttp.ClientConnectionError, asyncio.TimeoutError, aiohttp.ClientConnectionResetError, ConnectionResetError) as e:
             retries += 1
+            logger.error(f"Request failed: {str(e)}")
             if retries >= max_retries:
-                raise Exception(f"Max retries {max_retries} reached")
+                raise Exception(f"Max retries {max_retries} reached: {str(e)}")
             wait = min(2 ** retries, 10)
             await asyncio.sleep(wait)
         except Exception as e:
-            print(type(e))
+            logger.error(f"Unexpected error: {str(e)}")
             raise
     raise Exception(f"Max retries {max_retries} reached")
 
@@ -112,26 +114,16 @@ async def async_fetch(url, proxy=None):
 
 async def GET_request(url, cookies=None, proxy_list=None) -> str:
     try:
-        proxies = None
-        if proxy_list and len(proxy_list) > 0:
-            proxies = {
-                "http": proxy_list[0],
-                "https": proxy_list[0],
-            }
-        #
-        # print(proxies)
-        # response = requests.get(url, headers=HEAD, cookies=cookies, proxies=proxies)
-        # return response.text
-        # return await fetch_with_retry(
-        #     url=url,
-        #     proxy_list=proxy_list,
-        #     max_retries=5,
-        #     cookies=cookies,
-        #     timeout=TIMEOUT,
-        # )
-        return await async_fetch(url, proxies)
-
-
+        response = await fetch_with_retry(
+            url=url,
+            proxy_list=proxy_list,
+            max_retries=5,
+            cookies=cookies,
+            timeout=TIMEOUT,
+        )
+        if response is None:
+            raise Exception("Empty response from server")
+        return response
     except asyncio.exceptions.CancelledError:
         raise LoopError("Asyncio loop has been closed before request could finish.")
 

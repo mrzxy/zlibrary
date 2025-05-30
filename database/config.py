@@ -40,3 +40,4 @@ def close_db(db):
     """关闭数据库连接"""
     if not db.is_closed():
         db.close()
+

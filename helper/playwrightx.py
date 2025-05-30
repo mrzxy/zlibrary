@@ -1,8 +1,11 @@
 import os
 import time
+from datetime import datetime
+
 from playwright.sync_api import sync_playwright, Page, Browser, BrowserContext, Download
 from database.config import DOWNLOAD_DIR
 from playwright.async_api import async_playwright
+from helper.cookie import login_cookies
 
 def wait_for_download(page: Page, timeout=120):
     """
@@ -44,6 +47,8 @@ def close_browser(browser):
     if browser:
         browser.close()
 
+
+
 async def new_browser(proxy=None):
     """创建新的浏览器实例
 
@@ -68,11 +73,10 @@ async def new_browser(proxy=None):
             "username": "692056FF",  # 如果代理需要认证，在这里添加用户名
             "password": "3FA25E637E55"   # 如果代理需要认证，在这里添加密码
         }
-        print(  context_config["proxy"])
 
     # 启动浏览器
     browser = await playwright.chromium.launch(
-        headless=False,  # 设置为 True 则为无头模式
+        headless=True,  # 设置为 True 则为无头模式
         channel="chrome",  # 使用已安装的 Chrome 浏览器
         downloads_path=DOWNLOAD_DIR,  # 设置下载目录
         args=[
@@ -84,6 +88,7 @@ async def new_browser(proxy=None):
 
     # 创建新的上下文
     context = await browser.new_context(**context_config)
+    await context.add_cookies(login_cookies)
 
     # 设置页面超时
     context.set_default_timeout(30000)  # 30秒超时

@@ -20,7 +20,7 @@ from .profile import ZlibProfile
 from .const import Extension, Language
 from typing import Optional
 import json
-
+from helper.cookie import get_cookies_dict, login_cookies
 
 ZLIB_DOMAIN = os.getenv("ZLIB_DOMAIN")
 LOGIN_DOMAIN = "https://z-library.sk/rpc.php"
@@ -91,73 +91,31 @@ class AsyncZlib:
             self.semaphore = False
 
     async def _r(self, url: str):
+        logger.debug(f"Request URL: {url}")
+        logger.debug(f"Using cookies: {self.cookies}")
+        
         if self.semaphore:
             async with self.__semaphore:
-                return await GET_request(
-                    url, proxy_list=self.proxy_list, cookies=self.cookies
+                response = await GET_request(
+                    url, 
+                    proxy_list=self.proxy_list, 
+                    cookies=self.cookies
                 )
+                return response
         else:
-            return await GET_request(
-                url, proxy_list=self.proxy_list, cookies=self.cookies
+            response = await GET_request(
+                url, 
+                proxy_list=self.proxy_list, 
+                cookies=self.cookies
             )
+            return response
 
     async def login(self, email: str, password: str):
         self.mirror = ZLIB_DOMAIN.strip("/")
-        self.cookies = {
-            "siteLanguage": "en",
-            "selectedSiteMode": "books"
-        }
-        return
-        data = {
-            "isModal": True,
-            "email": email,
-            "password": password,
-            "site_mode": "books",
-            "action": "login",
-            "isSingleLogin": 1,
-            "redirectUrl": "",
-            "gg_json_mode": 1,
-        }
-
-        resp, jar = await POST_request(
-            self.login_domain, data, proxy_list=self.proxy_list
-        )
-        resp = json.loads(resp)
-        resp = resp['response']
-        logger.debug(f"Login response: {resp}")
-        if resp.get('validationError'):
-            raise LoginFailed(json.dumps(resp, indent=4))
-        self._jar = jar
-
-        self.cookies = {}
-        for cookie in self._jar:
-            self.cookies[cookie.key] = cookie.value
-        logger.debug("Set cookies: %s", self.cookies)
-
-        if self.onion and self.domain:
-            url = self.domain + "/?remix_userkey=%s&remix_userid=%s" % (
-                self.cookies["remix_userkey"],
-                self.cookies["remix_userid"],
-            )
-            resp, jar = await GET_request_cookies(
-                url, proxy_list=self.proxy_list, cookies=self.cookies
-            )
-
-            self._jar = jar
-            for cookie in self._jar:
-                self.cookies[cookie.key] = cookie.value
-            logger.debug("Set cookies: %s", self.cookies)
-
-            self.mirror = self.domain
-            logger.info("Set working mirror: %s" % self.mirror)
-        else:
-            self.mirror = ZLIB_DOMAIN.strip("/")
-
-            if not self.mirror:
-                raise NoDomainError
-
+        
+        self.cookies = get_cookies_dict()
         self.profile = ZlibProfile(self._r, self.cookies, self.mirror, ZLIB_DOMAIN)
-        return self.profile
+        return
 
     async def logout(self):
         self._jar = None
@@ -279,3 +237,11 @@ class AsyncZlib:
         )
         await paginator.init()
         return paginator
+
+    async def get_by_detail(self, path: str = ""):
+        if not id:
+            raise NoIdError
+
+        book = BookItem(self._r, self.mirror)
+        book["url"] = f"{self.mirror}{path}"
+        return await book.fetch()

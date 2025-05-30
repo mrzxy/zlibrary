@@ -1,11 +1,28 @@
+from netaddr.ip.iana import query
+
 from models.models import Book
 from peewee import chunked
 
 
 class BookRepo:
     @staticmethod
-    def get_to_download_books():
-        return Book.select().where(Book.status == 1)
+    def get_to_download_books(page_size=2000):
+        return BookRepo.query(page=1, page_size=page_size, status=1)
+
+    @staticmethod
+    def query(page=1, page_size=10, **kwargs):
+        query = Book.select()
+        for key, value in kwargs.items():
+            field = getattr(Book, key, None)
+            if field is not None:
+                query = query.where(field == value)
+
+        if page < 1:
+            page = 1
+        offset = (page - 1) * page_size
+        query = query.offset(offset).limit(page_size)
+
+        return list(query)
 
     @staticmethod
     def download_completed(book):
