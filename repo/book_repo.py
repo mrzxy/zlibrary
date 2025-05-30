@@ -65,6 +65,13 @@ class BookRepo:
         return Book.get_or_none(Book.id == id)
 
     @staticmethod
+    def get_by_book_id(book_id):
+        """根据 id 查询单条"""
+        return Book.get_or_none(Book.book_id == book_id)
+
+
+
+    @staticmethod
     def get_books_by_page(page=1, limit=10):
         offset = (page - 1) * limit
         books = Book.select().offset(offset).limit(limit)

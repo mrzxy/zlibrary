@@ -47,7 +47,7 @@ def signal_handler(signum, frame):
 async def run_download_manager():
     """在协程中运行下载管理器"""
     try:
-        task_manager.download_manager = DownloadManager(max_workers=1, interval=5)
+        task_manager.download_manager = DownloadManager(max_workers=5, interval=5)
         await task_manager.download_manager.run()
     except Exception as e:
         logger.error(f"下载管理器出错: {e}")

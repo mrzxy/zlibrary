@@ -133,12 +133,17 @@ class ZlibrarySpider:
 async def fetch_one(task, proxy_index=-1):
     try:
         spider = await NewZlibrarySpider(proxy_index)
+        await spider.login()
         fetch_records = await spider.search(task)
         if len(fetch_records) < 1:
             logger.warning(f"根据{task.book_name} 没有找到匹配的书籍")
             FetchTaskRepo.update_status_by_id(task.id, 4)
             return 1
         info = fetch_records[0]
+
+        if BookRepo.get_by_book_id(info.get('id')) is not None:
+            return 1
+
         # format_resp = await spider.get_format(info.get('id'))
         # if format_resp is None:
         #     logger.warning(f"获取{info.get('id')}的格式失败")
@@ -266,8 +271,8 @@ async def process_tasks_for_page(page, concurrency=10):
                 if success_rate < 50:
                     logger.warning(f"成功率低于50%，休眠 {sleep_time} 秒")
 
-                if success_count == 0:
-                    sc_send("抓取程序问题", "抓取程序问题，成功率0")
+                # if success_count == 0:
+                #     sc_send("抓取程序问题", "抓取程序问题，成功率0")
 
             except asyncio.TimeoutError:
                 logger.warning(f"Process {os.getpid()} - Batch {i // batch_size + 1} timeout after 30 seconds")
@@ -325,6 +330,5 @@ async def run_spider():
 async def dosomething():
     spider = ZlibrarySpider(-1)
     await spider.login()
-    limits =  await spider.get_limits()
+    limits = await spider.get_limits()
     print(limits)
-
